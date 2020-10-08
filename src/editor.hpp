@@ -20,10 +20,12 @@ class Editor {
    private:
     int x_;
     int y_;
+    int last_column_;
     Buffer buffer_;
     std::fstream file_;
     std::string file_path_;
 
+    int get_adjusted_x();
     void move_up();
     void move_right();
     void move_down();
