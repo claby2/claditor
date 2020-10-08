@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
     initialize_ncurses();
     while (editor.mode != Mode::EXIT) {
         editor.print_buffer();
+        editor.print_command_line();
         editor.handle_input(getch());
     }
     refresh();
