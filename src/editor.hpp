@@ -24,6 +24,7 @@ class Editor {
     int saved_x_;
     int saved_y_;
     int last_column_;
+    bool file_started_empty;
     std::string command_line_;
     Buffer buffer_;
     std::string file_path_;

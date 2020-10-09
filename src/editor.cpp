@@ -13,7 +13,8 @@ Editor::Editor()
       y_(0),
       saved_x_(0),
       saved_y_(0),
-      last_column_(0) {}
+      last_column_(0),
+      file_started_empty(false) {}
 
 void Editor::set_file(std::string file_path) {
     file_path_ = file_path;
@@ -22,6 +23,12 @@ void Editor::set_file(std::string file_path) {
     std::string line;
     while (std::getline(file, line)) {
         buffer_.push_back_line(line);
+    }
+    if (buffer_.get_size() == 0) {
+        // File is empty
+        // Add an empty line to prevent segmentation fault when accessing buffer
+        file_started_empty = true;
+        buffer_.push_back_line("");
     }
 }
 
@@ -189,9 +196,12 @@ void Editor::move_left() {
 
 void Editor::save_file() {
     std::ofstream file;
-    file.open(file_path_.c_str(), std::ios::out);
-    for (const std::string &line : buffer_.lines) {
-        file << line << '\n';
+    if (!(file_started_empty && buffer_.get_size() == 1 &&
+          buffer_.lines[0].empty())) {
+        file.open(file_path_.c_str(), std::ios::out);
+        for (const std::string &line : buffer_.lines) {
+            file << line << '\n';
+        }
     }
     file.close();
 }
