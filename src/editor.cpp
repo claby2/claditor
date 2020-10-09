@@ -65,7 +65,26 @@ void Editor::handle_input(int input) {
                 case 'l':
                     move_right();
                     break;
+                case 'a':
+                    ++x_;
+                    mode = Mode::INSERT;
+                    break;
+                case 'A':
+                    x_ = buffer_.get_line_length(y_);
+                    mode = Mode::INSERT;
+                    break;
                 case 'i':
+                    mode = Mode::INSERT;
+                    break;
+                case 'o':
+                    buffer_.insert_line("", y_ + 1);
+                    x_ = 0;
+                    ++y_;
+                    mode = Mode::INSERT;
+                    break;
+                case 'O':
+                    buffer_.insert_line("", y_);
+                    x_ = 0;
                     mode = Mode::INSERT;
                     break;
                 case ':':
