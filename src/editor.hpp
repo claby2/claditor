@@ -5,6 +5,7 @@
 #include <string>
 
 #include "buffer.hpp"
+#include "history.hpp"
 
 enum class Mode { EXIT, NORMAL, INSERT, VISUAL, COMMAND };
 
@@ -27,6 +28,7 @@ class Editor {
     bool file_started_empty;
     std::string command_line_;
     Buffer buffer_;
+    History history_;
     std::string file_path_;
 
     int get_adjusted_x();
@@ -37,7 +39,7 @@ class Editor {
     void save_file();
     void exit_command_mode();
     void exit_insert_mode();
+    void print_error(const std::string&);
     void parse_command();
 };
-
 #endif

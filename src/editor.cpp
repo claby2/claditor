@@ -6,6 +6,7 @@
 
 #include "buffer.hpp"
 #include "editor.hpp"
+#include "history.hpp"
 
 Editor::Editor()
     : mode(Mode::NORMAL),
@@ -30,6 +31,7 @@ void Editor::set_file(std::string file_path) {
         file_started_empty = true;
         buffer_.push_back_line("");
     }
+    history_.set(buffer_.lines);
 }
 
 void Editor::handle_input(int input) {
@@ -146,7 +148,7 @@ void Editor::print_command_line() const {
     if (mode == Mode::COMMAND) {
         mvprintw(LINES - 1, 0, "%s", (':' + command_line_).c_str());
         clrtoeol();
-    } else {
+    } else if (command_line_.empty()) {
         // Clear command line if not in command mode
         move(LINES - 1, 0);
         clrtoeol();
@@ -196,14 +198,15 @@ void Editor::move_left() {
 
 void Editor::save_file() {
     std::ofstream file;
+    file.open(file_path_.c_str(), std::ios::out);
     if (!(file_started_empty && buffer_.get_size() == 1 &&
           buffer_.lines[0].empty())) {
-        file.open(file_path_.c_str(), std::ios::out);
         for (const std::string &line : buffer_.lines) {
             file << line << '\n';
         }
     }
     file.close();
+    history_.set(buffer_.lines);
 }
 
 void Editor::exit_command_mode() {
@@ -225,11 +228,28 @@ void Editor::exit_insert_mode() {
     mode = Mode::NORMAL;
 }
 
+void Editor::print_error(const std::string &error) {
+    command_line_ = error;
+    mvprintw(LINES - 1, 0, "%s", ("ERROR: " + command_line_).c_str());
+    clrtoeol();
+    move(y_, x_);
+}
+
 void Editor::parse_command() {
     if (command_line_ == "w") {
         save_file();
     } else if (command_line_ == "wq") {
         save_file();
         mode = Mode::EXIT;
+    } else if (command_line_ == "q") {
+        if (history_.has_unsaved_changes(buffer_.lines)) {
+            print_error("No write since last change");
+        } else {
+            mode = Mode::EXIT;
+        }
+    } else if (command_line_ == "q!") {
+        mode = Mode::EXIT;
+    } else {
+        print_error("Not an editor command: " + command_line_);
     }
 }
