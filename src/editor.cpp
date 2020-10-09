@@ -21,14 +21,24 @@ void Editor::set_file(std::string file_path) {
     file.open(file_path.c_str(), std::ios::in);
     std::string line;
     while (std::getline(file, line)) {
-        buffer_.lines.push_back(line);
+        buffer_.push_back_line(line);
     }
 }
 
 void Editor::handle_input(int input) {
     switch (input) {
         case 27:  // ESC
-            exit_command_mode();
+            // Go to insert mode
+            switch (mode) {
+                case Mode::COMMAND:
+                    exit_command_mode();
+                    break;
+                case Mode::INSERT:
+                    exit_insert_mode();
+                    break;
+                default:
+                    break;
+            }
             return;
     }
     switch (mode) {
@@ -59,9 +69,35 @@ void Editor::handle_input(int input) {
             break;
         case Mode::INSERT:
             switch (input) {
+                case 127:  // Backspace key
+                    if (x_ == 0 && y_ > 0) {
+                        x_ = buffer_.get_line_length(y_ - 1);
+                        buffer_.add_string_to_line(buffer_.lines[y_], y_ - 1);
+                        buffer_.remove_line(y_);
+                        --y_;
+                    } else {
+                        // Erase character
+                        buffer_.erase(--x_, 1, y_);
+                    }
+                    break;
+                case 10:  // Enter key
+                    if (x_ < buffer_.lines[y_].length()) {
+                        // Move substring down
+                        int substring_length = buffer_.get_line_length(y_) - x_;
+                        buffer_.insert_line(
+                            buffer_.lines[y_].substr(x_, substring_length),
+                            y_ + 1);
+                        buffer_.erase(x_, substring_length, y_);
+                    } else {
+                        buffer_.insert_line("", y_ + 1);
+                    }
+                    x_ = 0;
+                    ++y_;
+                    break;
                 default:
-                    buffer_.lines[y_].insert(x_, 1, static_cast<char>(input));
+                    buffer_.insert_char(x_, 1, static_cast<char>(input), y_);
                     ++x_;
+                    break;
             }
             break;
         case Mode::COMMAND:
@@ -89,10 +125,10 @@ void Editor::handle_input(int input) {
 
 void Editor::print_buffer() {
     for (int i = 0; i < LINES - 1; ++i) {
-        if (i >= buffer_.lines.size()) {
+        if (i >= buffer_.get_size()) {
             move(i, 0);
         } else {
-            mvprintw(i, 0, buffer_.lines[i].c_str());
+            mvprintw(i, 0, "%s", buffer_.lines[i].c_str());
         }
         clrtoeol();
     }
@@ -101,15 +137,20 @@ void Editor::print_buffer() {
 
 void Editor::print_command_line() const {
     if (mode == Mode::COMMAND) {
-        mvprintw(LINES - 1, 0, (':' + command_line_).c_str());
+        mvprintw(LINES - 1, 0, "%s", (':' + command_line_).c_str());
         clrtoeol();
+    } else {
+        // Clear command line if not in command mode
+        move(LINES - 1, 0);
+        clrtoeol();
+        move(y_, x_);
     }
 }
 
 int Editor::get_adjusted_x() {
     // When the y position is changed the x position needs to be updated to
     // adjust for line length
-    int line_length = buffer_.lines[y_].length();
+    int line_length = buffer_.get_line_length(y_);
     return last_column_ >= line_length ? std::max(line_length - 1, 0)
                                        : last_column_;
 }
@@ -123,7 +164,7 @@ void Editor::move_up() {
 }
 
 void Editor::move_right() {
-    if (x_ + 1 < COLS && x_ + 1 < buffer_.lines[y_].length()) {
+    if (x_ + 1 < COLS && x_ + 1 < buffer_.get_line_length(y_)) {
         ++x_;
         last_column_ = x_;
         move(y_, x_);
@@ -131,7 +172,7 @@ void Editor::move_right() {
 }
 
 void Editor::move_down() {
-    if (y_ + 1 < LINES - 1 && y_ + 1 < buffer_.lines.size()) {
+    if (y_ + 1 < LINES - 1 && y_ + 1 < buffer_.get_size()) {
         ++y_;
         x_ = get_adjusted_x();
         move(y_, x_);
@@ -160,6 +201,16 @@ void Editor::exit_command_mode() {
     y_ = saved_y_;
     move(LINES - 1, 0);
     clrtoeol();
+    move(y_, x_);
+    mode = Mode::NORMAL;
+}
+
+void Editor::exit_insert_mode() {
+    getyx(stdscr, y_, x_);
+    if (x_ - 1 >= 0) {
+        --x_;
+    }
+    last_column_ = x_;
     move(y_, x_);
     mode = Mode::NORMAL;
 }

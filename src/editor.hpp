@@ -35,6 +35,7 @@ class Editor {
     void move_left();
     void save_file();
     void exit_command_mode();
+    void exit_insert_mode();
     void parse_command();
 };
 
