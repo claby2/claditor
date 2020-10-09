@@ -17,9 +17,10 @@ Editor::Editor()
 
 void Editor::set_file(std::string file_path) {
     file_path_ = file_path;
-    file_.open(file_path.c_str(), std::ios::in);
+    std::ifstream file;
+    file.open(file_path.c_str(), std::ios::in);
     std::string line;
-    while (std::getline(file_, line)) {
+    while (std::getline(file, line)) {
         buffer_.lines.push_back(line);
     }
 }
@@ -28,7 +29,6 @@ void Editor::handle_input(int input) {
     switch (input) {
         case 27:  // ESC
             exit_command_mode();
-            mode = Mode::NORMAL;
             return;
     }
     switch (mode) {
@@ -46,6 +46,9 @@ void Editor::handle_input(int input) {
                 case 'l':
                     move_right();
                     break;
+                case 'i':
+                    mode = Mode::INSERT;
+                    break;
                 case ':':
                     saved_x_ = x_;
                     saved_y_ = y_;
@@ -54,15 +57,25 @@ void Editor::handle_input(int input) {
                     break;
             }
             break;
+        case Mode::INSERT:
+            switch (input) {
+                default:
+                    buffer_.lines[y_].insert(x_, 1, static_cast<char>(input));
+                    ++x_;
+            }
+            break;
         case Mode::COMMAND:
             switch (input) {
                 case 10:  // Enter key
                     exit_command_mode();
-                    mode = Mode::NORMAL;
                     parse_command();
                     break;
                 case 127:  // Delete key
-                    command_line_.pop_back();
+                    if (command_line_.empty()) {
+                        exit_command_mode();
+                    } else {
+                        command_line_.pop_back();
+                    }
                     break;
                 default:
                     command_line_ += static_cast<char>(input);
@@ -134,11 +147,12 @@ void Editor::move_left() {
 }
 
 void Editor::save_file() {
-    file_.open(file_path_.c_str(), std::ios::out);
+    std::ofstream file;
+    file.open(file_path_.c_str(), std::ios::out);
     for (const std::string &line : buffer_.lines) {
-        file_ << line << '\n';
+        file << line << '\n';
     }
-    file_.close();
+    file.close();
 }
 
 void Editor::exit_command_mode() {
@@ -147,6 +161,7 @@ void Editor::exit_command_mode() {
     move(LINES - 1, 0);
     clrtoeol();
     move(y_, x_);
+    mode = Mode::NORMAL;
 }
 
 void Editor::parse_command() {

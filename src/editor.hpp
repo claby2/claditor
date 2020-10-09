@@ -26,7 +26,6 @@ class Editor {
     int last_column_;
     std::string command_line_;
     Buffer buffer_;
-    std::fstream file_;
     std::string file_path_;
 
     int get_adjusted_x();
