@@ -61,11 +61,16 @@ void Editor::handle_input(int input) {
                     mode = Mode::NORMAL;
                     parse_command();
                     break;
+                case 127:  // Delete key
+                    command_line_.pop_back();
+                    break;
                 default:
                     command_line_ += static_cast<char>(input);
                     break;
             }
             break;
+        default:
+            return;
     }
 }
 
