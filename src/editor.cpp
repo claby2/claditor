@@ -116,7 +116,7 @@ void Editor::handle_input(int input) {
                                 y_ = 0;
                             }
                         case 'd':
-                            if (normal_bind_buffer_ == "d") { // Bind: dd
+                            if (normal_bind_buffer_ == "d") {  // Bind: dd
                                 buffer_.remove_line(y_);
                                 x_ = buffer_.get_first_non_blank(y_);
                             }
