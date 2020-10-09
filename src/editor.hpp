@@ -38,6 +38,7 @@ class Editor {
     void move_down();
     void move_left();
     void save_file();
+    void print_message(const std::string&);
     void print_error(const std::string&);
     void parse_command();
     void exit_command_mode();

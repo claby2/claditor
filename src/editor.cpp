@@ -66,9 +66,6 @@ void Editor::handle_input(int input) {
                         case 'x':
                             buffer_.erase(x_, 1, y_);
                             break;
-                        case 'g':
-                            normal_bind_buffer_ += 'g';
-                            break;
                         case 'G': {
                             int last_line = buffer_.get_size() - 1;
                             x_ = buffer_.get_first_non_blank(last_line);
@@ -84,6 +81,7 @@ void Editor::handle_input(int input) {
                             set_mode(Mode::INSERT);
                             break;
                         case 'i':
+                            print_message("-- INSERT --");
                             set_mode(Mode::INSERT);
                             break;
                         case 'o':
@@ -103,6 +101,9 @@ void Editor::handle_input(int input) {
                             command_line_ = "";
                             set_mode(Mode::COMMAND);
                             break;
+                        default:
+                            normal_bind_buffer_ += static_cast<char>(input);
+                            break;
                     }
                     break;
                 case 1:
@@ -114,9 +115,16 @@ void Editor::handle_input(int input) {
                                 x_ = buffer_.get_first_non_blank(0);
                                 y_ = 0;
                             }
+                        case 'd':
+                            if (normal_bind_buffer_ == "d") { // Bind: dd
+                                buffer_.remove_line(y_);
+                                x_ = buffer_.get_first_non_blank(y_);
+                            }
                     }
                     normal_bind_buffer_ = "";
                     break;
+                default:
+                    normal_bind_buffer_ = "";
             }
             break;
         case Mode::INSERT:
@@ -252,13 +260,18 @@ void Editor::save_file() {
     }
     file.close();
     history_.set(buffer_.lines);
+    print_message("\"" + file_path_ + "\" written");
+}
+
+void Editor::print_message(const std::string &message) {
+    command_line_ = message;
+    mvprintw(LINES - 1, 0, "%s", command_line_.c_str());
+    clrtoeol();
+    move(y_, x_);
 }
 
 void Editor::print_error(const std::string &error) {
-    command_line_ = error;
-    mvprintw(LINES - 1, 0, "%s", ("ERROR: " + command_line_).c_str());
-    clrtoeol();
-    move(y_, x_);
+    print_message("ERROR: " + error);
 }
 
 void Editor::parse_command() {
@@ -295,6 +308,7 @@ void Editor::exit_insert_mode() {
     }
     last_column_ = x_;
     move(y_, x_);
+    print_message("");
 }
 
 void Editor::exit_normal_mode() { normal_bind_buffer_ = ""; }
