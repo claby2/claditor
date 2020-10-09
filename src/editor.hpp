@@ -25,8 +25,9 @@ class Editor {
     int saved_x_;
     int saved_y_;
     int last_column_;
-    bool file_started_empty;
+    bool file_started_empty_;
     std::string command_line_;
+    std::string normal_bind_buffer_;
     Buffer buffer_;
     History history_;
     std::string file_path_;
@@ -37,9 +38,11 @@ class Editor {
     void move_down();
     void move_left();
     void save_file();
-    void exit_command_mode();
-    void exit_insert_mode();
     void print_error(const std::string&);
     void parse_command();
+    void exit_command_mode();
+    void exit_insert_mode();
+    void exit_normal_mode();
+    void set_mode(Mode);
 };
 #endif

@@ -11,6 +11,15 @@ int Buffer::get_line_length(int row) {
 
 int Buffer::get_size() const { return static_cast<int>(lines.size()); }
 
+int Buffer::get_first_non_blank(int row) {
+    std::string::size_type index = lines[row].find_first_not_of(" \t\r\n");
+    if (index == std::string::npos) {
+        // Either the line is empty or is only whitespace
+        return get_line_length(row);
+    }
+    return static_cast<int>(index);
+}
+
 void Buffer::push_back_line(std::string line) { lines.push_back(line); }
 
 void Buffer::insert_line(std::string line, int row) {

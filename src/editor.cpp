@@ -15,7 +15,7 @@ Editor::Editor()
       saved_x_(0),
       saved_y_(0),
       last_column_(0),
-      file_started_empty(false) {}
+      file_started_empty_(false) {}
 
 void Editor::set_file(std::string file_path) {
     file_path_ = file_path;
@@ -28,7 +28,7 @@ void Editor::set_file(std::string file_path) {
     if (buffer_.get_size() == 0) {
         // File is empty
         // Add an empty line to prevent segmentation fault when accessing buffer
-        file_started_empty = true;
+        file_started_empty_ = true;
         buffer_.push_back_line("");
     }
     history_.set(buffer_.lines);
@@ -37,78 +37,104 @@ void Editor::set_file(std::string file_path) {
 void Editor::handle_input(int input) {
     switch (input) {
         case 27:  // ESC
-            // Go to insert mode
-            switch (mode) {
-                case Mode::COMMAND:
-                    exit_command_mode();
-                    break;
-                case Mode::INSERT:
-                    exit_insert_mode();
-                    break;
-                default:
-                    break;
-            }
+            set_mode(Mode::NORMAL);
             return;
     }
     switch (mode) {
         case Mode::NORMAL:
-            switch (input) {
-                case 'h':
-                    move_left();
+            switch (normal_bind_buffer_.length()) {
+                case 0:
+                    switch (input) {
+                        case 'h':
+                            move_left();
+                            break;
+                        case 'j':
+                            move_down();
+                            break;
+                        case 'k':
+                            move_up();
+                            break;
+                        case 'l':
+                            move_right();
+                            break;
+                        case '0':
+                            x_ = 0;
+                            break;
+                        case '^':
+                            x_ = buffer_.get_first_non_blank(y_);
+                            break;
+                        case 'x':
+                            buffer_.erase(x_, 1, y_);
+                            break;
+                        case 'g':
+                            normal_bind_buffer_ += 'g';
+                            break;
+                        case 'G': {
+                            int last_line = buffer_.get_size() - 1;
+                            x_ = buffer_.get_first_non_blank(last_line);
+                            y_ = last_line;
+                            break;
+                        }
+                        case 'a':
+                            ++x_;
+                            set_mode(Mode::INSERT);
+                            break;
+                        case 'A':
+                            x_ = buffer_.get_line_length(y_);
+                            set_mode(Mode::INSERT);
+                            break;
+                        case 'i':
+                            set_mode(Mode::INSERT);
+                            break;
+                        case 'o':
+                            buffer_.insert_line("", y_ + 1);
+                            x_ = 0;
+                            ++y_;
+                            set_mode(Mode::INSERT);
+                            break;
+                        case 'O':
+                            buffer_.insert_line("", y_);
+                            x_ = 0;
+                            set_mode(Mode::INSERT);
+                            break;
+                        case ':':
+                            saved_x_ = x_;
+                            saved_y_ = y_;
+                            command_line_ = "";
+                            set_mode(Mode::COMMAND);
+                            break;
+                    }
                     break;
-                case 'j':
-                    move_down();
-                    break;
-                case 'k':
-                    move_up();
-                    break;
-                case 'l':
-                    move_right();
-                    break;
-                case 'a':
-                    ++x_;
-                    mode = Mode::INSERT;
-                    break;
-                case 'A':
-                    x_ = buffer_.get_line_length(y_);
-                    mode = Mode::INSERT;
-                    break;
-                case 'i':
-                    mode = Mode::INSERT;
-                    break;
-                case 'o':
-                    buffer_.insert_line("", y_ + 1);
-                    x_ = 0;
-                    ++y_;
-                    mode = Mode::INSERT;
-                    break;
-                case 'O':
-                    buffer_.insert_line("", y_);
-                    x_ = 0;
-                    mode = Mode::INSERT;
-                    break;
-                case ':':
-                    saved_x_ = x_;
-                    saved_y_ = y_;
-                    command_line_ = "";
-                    mode = Mode::COMMAND;
+                case 1:
+                    switch (input) {
+                        case 'g':
+                            if (normal_bind_buffer_ == "g") {  // Bind: gg
+                                // Go to first line and first non-blank
+                                // character
+                                x_ = buffer_.get_first_non_blank(0);
+                                y_ = 0;
+                            }
+                    }
+                    normal_bind_buffer_ = "";
                     break;
             }
             break;
         case Mode::INSERT:
             switch (input) {
                 case 127:  // Backspace key
+                case KEY_BACKSPACE:
                     if (x_ == 0 && y_ > 0) {
                         x_ = buffer_.get_line_length(y_ - 1);
                         buffer_.add_string_to_line(buffer_.lines[y_], y_ - 1);
                         buffer_.remove_line(y_);
                         --y_;
-                    } else {
+                    } else if (!(x_ == 0 && y_ == 0)) {
                         // Erase character
                         buffer_.erase(--x_, 1, y_);
                     }
                     break;
                 case 10:  // Enter key
+                case KEY_ENTER:
                     if (x_ < buffer_.lines[y_].length()) {
                         // Move substring down
                         int substring_length = buffer_.get_line_length(y_) - x_;
@@ -131,12 +157,12 @@ void Editor::handle_input(int input) {
         case Mode::COMMAND:
             switch (input) {
                 case 10:  // Enter key
-                    exit_command_mode();
+                    set_mode(Mode::NORMAL);
                     parse_command();
                     break;
                 case 127:  // Delete key
                     if (command_line_.empty()) {
-                        exit_command_mode();
+                        set_mode(Mode::NORMAL);
                     } else {
                         command_line_.pop_back();
                     }
@@ -218,7 +244,7 @@ void Editor::move_left() {
 void Editor::save_file() {
     std::ofstream file;
     file.open(file_path_.c_str(), std::ios::out);
-    if (!(file_started_empty && buffer_.get_size() == 1 &&
+    if (!(file_started_empty_ && buffer_.get_size() == 1 &&
           buffer_.lines[0].empty())) {
         for (const std::string &line : buffer_.lines) {
             file << line << '\n';
@@ -226,25 +252,6 @@ void Editor::save_file() {
     }
     file.close();
     history_.set(buffer_.lines);
-}
-
-void Editor::exit_command_mode() {
-    x_ = saved_x_;
-    y_ = saved_y_;
-    move(LINES - 1, 0);
-    clrtoeol();
-    move(y_, x_);
-    mode = Mode::NORMAL;
-}
-
-void Editor::exit_insert_mode() {
-    getyx(stdscr, y_, x_);
-    if (x_ - 1 >= 0) {
-        --x_;
-    }
-    last_column_ = x_;
-    move(y_, x_);
-    mode = Mode::NORMAL;
 }
 
 void Editor::print_error(const std::string &error) {
@@ -259,16 +266,54 @@ void Editor::parse_command() {
         save_file();
     } else if (command_line_ == "wq") {
         save_file();
-        mode = Mode::EXIT;
+        set_mode(Mode::EXIT);
     } else if (command_line_ == "q") {
         if (history_.has_unsaved_changes(buffer_.lines)) {
             print_error("No write since last change");
         } else {
-            mode = Mode::EXIT;
+            set_mode(Mode::EXIT);
         }
     } else if (command_line_ == "q!") {
-        mode = Mode::EXIT;
+        set_mode(Mode::EXIT);
     } else {
         print_error("Not an editor command: " + command_line_);
+    }
+}
+
+void Editor::exit_command_mode() {
+    x_ = saved_x_;
+    y_ = saved_y_;
+    move(LINES - 1, 0);
+    clrtoeol();
+    move(y_, x_);
+}
+
+void Editor::exit_insert_mode() {
+    getyx(stdscr, y_, x_);
+    if (x_ - 1 >= 0) {
+        --x_;
+    }
+    last_column_ = x_;
+    move(y_, x_);
+}
+
+void Editor::exit_normal_mode() { normal_bind_buffer_ = ""; }
+
+void Editor::set_mode(Mode new_mode) {
+    if (mode != new_mode) {
+        switch (mode) {
+            case Mode::INSERT:
+                exit_insert_mode();
+                break;
+            case Mode::COMMAND:
+                exit_command_mode();
+                break;
+            case Mode::NORMAL:
+                exit_normal_mode();
+                break;
+            default:
+                break;
+        }
+        mode = new_mode;
     }
 }
