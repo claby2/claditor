@@ -1,6 +1,7 @@
 #include <ncurses.h>
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <string>
 
@@ -130,6 +131,21 @@ bool Editor::normal_state(int input) {
             set_mode(Mode::COMMAND);
             state_enter(command_state);
             break;
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            normal_add_count(input);
+            state_enter(normal_add_count_state);
+            break;
+        default:
+            normal_bind_count_ = "";
+            break;
     }
     return true;
 }
@@ -239,6 +255,30 @@ void Editor::normal_first_line() {
     y_ = 0;
 }
 
+void Editor::normal_jump_line(int line) {
+    // Ensure that line exists in buffer
+    line = std::max(0, std::min(buffer_.get_size(), line)) - 1;
+    normal_bind_count_ = "";
+    if (line > first_line_ && line < first_line_ + LINES - 1) {
+        // Target line is already visible
+        // There is no need to change first_line_
+        y_ = line - first_line_;
+    } else if (std::abs(line - (first_line_ + std::floor(LINES / 2))) > LINES) {
+        // Make y_ middle point of screen
+        first_line_ = std::max(
+            0, std::min(buffer_.get_size() - LINES + 1,
+                        static_cast<int>(line - std::floor(LINES / 2))));
+        y_ = line - first_line_;
+    } else if (line < current_line_) {
+        first_line_ = line;
+        y_ = 0;
+    } else {
+        first_line_ = line - LINES + 2;
+        y_ = LINES - 2;
+    }
+    x_ = buffer_.get_first_non_blank(line);
+}
+
 void Editor::normal_delete_line() {
     if (buffer_.get_size() > 1) {
         buffer_.remove_line(current_line_);
@@ -249,10 +289,18 @@ void Editor::normal_delete_line() {
     }
 }
 
+void Editor::normal_add_count(int input) {
+    normal_bind_count_ += static_cast<char>(input);
+}
+
 bool Editor::normal_command_g_state(int input) {
     switch (input) {
         case 'g':  // Bind: gg
-            normal_first_line();
+            if (normal_bind_count_.empty()) {
+                normal_first_line();
+            } else {
+                normal_jump_line(std::stoi(normal_bind_count_));
+            }
             break;
     }
     return false;
@@ -262,6 +310,28 @@ bool Editor::normal_command_d_state(int input) {
     switch (input) {
         case 'd':  // Bind: dd
             normal_delete_line();
+            break;
+    }
+    return false;
+}
+
+bool Editor::normal_add_count_state(int input) {
+    switch (input) {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            normal_add_count(input);
+            state_enter(normal_add_count_state);
+            break;
+        default:
+            normal_state(input);
             break;
     }
     return false;
@@ -433,7 +503,7 @@ void Editor::exit_insert_mode() {
     print_message("");
 }
 
-void Editor::exit_normal_mode() { normal_bind_buffer_ = ""; }
+void Editor::exit_normal_mode() { normal_bind_count_ = ""; }
 
 void Editor::set_mode(Mode new_mode) {
     if (mode != new_mode) {
