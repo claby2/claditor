@@ -17,7 +17,8 @@ class Editor {
     void set_file(std::string);
     void handle_input(int);
     void print_buffer();
-    void print_command_line() const;
+    void print_command_line();
+    void update();
 
    private:
     int x_;
@@ -27,6 +28,7 @@ class Editor {
     int last_column_;
     int first_line_;
     int current_line_;
+    int line_number_width_;
     bool file_started_empty_;
     std::string command_line_;
     std::string normal_bind_buffer_;
@@ -35,6 +37,7 @@ class Editor {
     std::string file_path_;
 
     int get_adjusted_x();
+    void adjusted_move(int, int);
     void move_up();
     void move_right();
     void move_down();
