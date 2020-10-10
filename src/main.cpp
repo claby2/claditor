@@ -13,22 +13,14 @@ void initialize_ncurses() {
 }
 
 int main(int argc, char *argv[]) {
-    std::string file;
-    Editor editor;
     if (argc > 1) {
-        file = argv[1];
+        std::string file = argv[1];
+        Editor editor;
         editor.set_file(file);
-    } else {
-        editor.mode = Mode::EXIT;
+        initialize_ncurses();
+        editor.main();
+        refresh();
+        endwin();
     }
-    initialize_ncurses();
-    while (editor.mode != Mode::EXIT) {
-        editor.update();
-        editor.print_buffer();
-        editor.print_command_line();
-        editor.handle_input(getch());
-    }
-    refresh();
-    endwin();
     return 0;
 }

@@ -15,10 +15,7 @@ class Editor {
 
     Editor();
     void set_file(std::string);
-    void handle_input(int);
-    void print_buffer();
-    void print_command_line();
-    void update();
+    void main();
 
    private:
     int x_;
@@ -36,12 +33,48 @@ class Editor {
     History history_;
     std::string file_path_;
 
+    void print_buffer();
+    void print_command_line();
+    void update();
+
+    bool normal_state(int);
+    bool insert_state(int);
+    bool command_state(int);
+    void state_enter(bool (Editor::*)(int));
+
+    // Normal mode binds
+    void normal_first_char();
+    void normal_first_non_blank_char();
+    void normal_delete();
+    void normal_end_of_file();
+    void normal_append_after_cursor();
+    void normal_append_end_of_line();
+    void normal_begin_new_line_below();
+    void normal_begin_new_line_above();
+    void normal_first_line();
+    void normal_delete_line();
+    // Normal mode command states
+    bool normal_command_g_state(int);
+    bool normal_command_d_state(int);
+
+    // Standard movement
     int get_adjusted_x();
     void adjusted_move(int, int);
     void move_up();
     void move_right();
     void move_down();
     void move_left();
+
+    // Insert mode binds
+    void insert_backspace();
+    void insert_enter();
+    void insert_char(int);
+
+    // Command mode binds
+    void command_backspace();
+    void command_enter();
+    void command_char(int);
+
     void save_file();
     void print_message(const std::string&);
     void print_error(const std::string&);
