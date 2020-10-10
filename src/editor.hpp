@@ -25,6 +25,8 @@ class Editor {
     int saved_x_;
     int saved_y_;
     int last_column_;
+    int first_line_;
+    int current_line_;
     bool file_started_empty_;
     std::string command_line_;
     std::string normal_bind_buffer_;
