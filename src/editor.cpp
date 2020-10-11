@@ -257,9 +257,9 @@ void Editor::normal_first_line() {
 
 void Editor::normal_jump_line(int line) {
     // Ensure that line exists in buffer
-    line = std::max(0, std::min(buffer_.get_size(), line)) - 1;
+    line = std::max(0, std::min(buffer_.get_size() - 1, line));
     normal_bind_count_ = "";
-    if (line > first_line_ && line < first_line_ + LINES - 1) {
+    if (line >= first_line_ && line < first_line_ + LINES - 1) {
         // Target line is already visible
         // There is no need to change first_line_
         y_ = line - first_line_;
@@ -276,7 +276,6 @@ void Editor::normal_jump_line(int line) {
         first_line_ = line - LINES + 2;
         y_ = LINES - 2;
     }
-    x_ = buffer_.get_first_non_blank(line);
 }
 
 void Editor::normal_delete_line() {
@@ -299,7 +298,13 @@ bool Editor::normal_command_g_state(int input) {
             if (normal_bind_count_.empty()) {
                 normal_first_line();
             } else {
-                normal_jump_line(std::stoi(normal_bind_count_));
+                // Subtract one as buffer is zero indexed while line numbers are
+                // one indexed
+                normal_jump_line(std::stoi(normal_bind_count_) - 1);
+                // Go to first non blank character of current line which is
+                // equal to the sum of the first line and y_
+                x_ = buffer_.get_first_non_blank(first_line_ + y_);
+                last_column_ = x_;
             }
             break;
     }
@@ -351,36 +356,61 @@ void Editor::adjusted_move(int y, int x) {
 }
 
 void Editor::move_up() {
-    if (current_line_ - 1 >= 0 && y_ - 1 >= 0) {
-        --y_;
+    if (normal_bind_count_.empty()) {
+        if (current_line_ - 1 >= 0 && y_ - 1 >= 0) {
+            --y_;
+        } else if (current_line_ - 1 >= 0) {
+            --first_line_;
+        }
         x_ = get_adjusted_x();
-    } else if (current_line_ - 1 >= 0) {
-        --first_line_;
+    } else {
+        // Move up by [count] lines
+        normal_jump_line(current_line_ - std::stoi(normal_bind_count_));
         x_ = get_adjusted_x();
     }
 }
 
 void Editor::move_right() {
-    if (x_ + 1 < COLS && x_ + 1 < buffer_.get_line_length(current_line_)) {
-        ++x_;
+    if (normal_bind_count_.empty()) {
+        if (x_ + 1 < COLS && x_ + 1 < buffer_.get_line_length(current_line_)) {
+            ++x_;
+            last_column_ = x_;
+        }
+    } else {
+        // Move right by [count] characters
+        x_ = std::min(buffer_.get_line_length(current_line_) - 1,
+                      x_ + std::stoi(normal_bind_count_));
+        normal_bind_count_ = "";
         last_column_ = x_;
     }
 }
 
 void Editor::move_down() {
-    if (y_ + 1 < LINES - 1 && current_line_ + 1 < buffer_.get_size()) {
-        ++y_;
+    if (normal_bind_count_.empty()) {
+        if (y_ + 1 < LINES - 1 && current_line_ + 1 < buffer_.get_size()) {
+            ++y_;
+        } else if (current_line_ + 1 < buffer_.get_size()) {
+            // Scroll down
+            ++first_line_;
+        }
         x_ = get_adjusted_x();
-    } else if (current_line_ + 1 < buffer_.get_size()) {
-        // Scroll down
-        ++first_line_;
+    } else {
+        // Move down by [count] lines
+        normal_jump_line(current_line_ + std::stoi(normal_bind_count_));
         x_ = get_adjusted_x();
     }
 }
 
 void Editor::move_left() {
-    if (x_ - 1 >= 0) {
-        --x_;
+    if (normal_bind_count_.empty()) {
+        if (x_ - 1 >= 0) {
+            --x_;
+            last_column_ = x_;
+        }
+    } else {
+        // Move left by [count] characters
+        x_ = std::max(0, x_ - std::stoi(normal_bind_count_));
+        normal_bind_count_ = "";
         last_column_ = x_;
     }
 }
