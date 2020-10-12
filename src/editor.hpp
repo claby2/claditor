@@ -3,12 +3,26 @@
 
 #include <fstream>
 #include <string>
+#include <unordered_map>
 
 #include "bind_count.hpp"
 #include "buffer.hpp"
+#include "color.hpp"
 #include "history.hpp"
 
 enum class Mode { EXIT, NORMAL, INSERT, VISUAL, COMMAND };
+
+enum class ColorType : short {
+    DEFAULT = 1,
+    COMMENT = 2,
+    ACCENT = 3,
+    COLOR1 = 4,
+    COLOR2 = 5,
+    COLOR3 = 6,
+    COLOR4 = 7,
+    COLOR5 = 8,
+    COLOR6 = 9
+};
 
 class Editor {
    public:
@@ -28,11 +42,14 @@ class Editor {
     int current_line_;
     int line_number_width_;
     bool file_started_empty_;
+    std::string colorscheme_name_;
     std::string command_line_;
+    std::string file_path_;
     BindCount normal_bind_count_;
     Buffer buffer_;
     History history_;
-    std::string file_path_;
+    Colorscheme colorscheme_;
+    std::unordered_map<std::string, Colorscheme> colorschemes_;
 
     void print_buffer();
     void print_command_line();
@@ -80,6 +97,10 @@ class Editor {
     void command_char(int);
 
     void save_file();
+    void get_colorschemes();
+    void set_colorscheme(const std::string&);
+    void set_color(ColorType) const;
+    void unset_color(ColorType) const;
     void print_message(const std::string&);
     void print_error(const std::string&);
     void parse_command();

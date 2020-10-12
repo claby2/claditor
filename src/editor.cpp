@@ -1,14 +1,18 @@
+#include <dirent.h>
 #include <ncurses.h>
 
 #include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <string>
+#include <unordered_map>
 
 #include "bind_count.hpp"
 #include "buffer.hpp"
+#include "color.hpp"
 #include "editor.hpp"
 #include "history.hpp"
+#include "runtime.hpp"
 
 Editor::Editor()
     : mode(Mode::NORMAL),
@@ -39,9 +43,13 @@ void Editor::set_file(std::string file_path) {
     history_.set(buffer_.lines);
 }
 
-void Editor::main() { state_enter(normal_state); }
+void Editor::main() {
+    get_colorschemes();
+    state_enter(normal_state);
+}
 
 void Editor::print_buffer() {
+    set_color(ColorType::DEFAULT);
     for (int i = 0; i < LINES - 1; ++i) {
         if (i >= buffer_.get_size()) {
             move(i, 0);
@@ -57,10 +65,12 @@ void Editor::print_buffer() {
         }
         clrtoeol();
     }
+    unset_color(ColorType::DEFAULT);
     adjusted_move(y_, x_);
 }
 
 void Editor::print_command_line() {
+    set_color(ColorType::DEFAULT);
     if (mode == Mode::COMMAND) {
         mvprintw(LINES - 1, 0, "%s", (':' + command_line_).c_str());
         clrtoeol();
@@ -70,6 +80,7 @@ void Editor::print_command_line() {
         clrtoeol();
         adjusted_move(y_, x_);
     }
+    unset_color(ColorType::DEFAULT);
 }
 
 void Editor::update() {
@@ -488,6 +499,64 @@ void Editor::save_file() {
     print_message("\"" + file_path_ + "\" written");
 }
 
+void Editor::get_colorschemes() {
+    // Get colorschemes
+    // Iterate through the runtime colors directory and push back colorschemes
+    std::string home_directory = get_home_directory();
+    std::string colors_directory = home_directory + "/.config/claditor/colors/";
+    DIR *dir;
+    dirent entry;
+    dirent *result;
+    if ((dir = opendir(colors_directory.c_str())) != 0) {
+        while (readdir_r(dir, &entry, &result) == 0 && result != 0) {
+            std::string file_name = entry.d_name;
+            if (file_name.substr(file_name.find_last_of(".") + 1) == "clad") {
+                // File has .clad file extension
+                // Parse the file
+                std::string colorscheme_name =
+                    file_name.substr(0, file_name.find_last_of("."));
+                Colorscheme colorscheme(colors_directory + file_name);
+                colorschemes_[colorscheme_name] = colorscheme;
+            }
+        }
+        closedir(dir);
+    }
+}
+
+void Editor::set_colorscheme(const std::string &new_colorscheme_name) {
+    colorscheme_name_ = new_colorscheme_name;
+    colorscheme_ = colorschemes_[colorscheme_name_];
+    // Initialize ncurses colors
+    auto initialize_color = [](short n, Color color) {
+        init_color(n, color.r, color.g, color.b);
+        if (n != 0) {
+            init_pair(n, n, 0);
+        }
+    };
+    initialize_color(0, colorscheme_.background);
+    initialize_color(1, colorscheme_.foreground);
+    initialize_color(2, colorscheme_.comment);
+    initialize_color(3, colorscheme_.accent);
+    initialize_color(4, colorscheme_.color1);
+    initialize_color(5, colorscheme_.color2);
+    initialize_color(6, colorscheme_.color3);
+    initialize_color(7, colorscheme_.color4);
+    initialize_color(8, colorscheme_.color5);
+    initialize_color(9, colorscheme_.color6);
+}
+
+void Editor::set_color(ColorType color) const {
+    if (has_colors() && !colorscheme_name_.empty()) {
+        attron(COLOR_PAIR(color));
+    }
+}
+
+void Editor::unset_color(ColorType color) const {
+    if (has_colors() && !colorscheme_name_.empty()) {
+        attroff(COLOR_PAIR(color));
+    }
+}
+
 void Editor::print_message(const std::string &message) {
     command_line_ = message;
     mvprintw(LINES - 1, 0, "%s", command_line_.c_str());
@@ -500,19 +569,44 @@ void Editor::print_error(const std::string &error) {
 }
 
 void Editor::parse_command() {
-    if (command_line_ == "w") {
+    std::string command = command_line_;
+    std::string args = "";
+    std::string::size_type space_delimiter = command_line_.find(" ");
+    // If has_space_delimiter is true the given command may have additional
+    // arguments
+    if (space_delimiter != std::string::npos) {
+        command = command_line_.substr(0, space_delimiter);
+        args = command_line_.substr(space_delimiter + 1);
+    }
+    if (command == "w") {
         save_file();
-    } else if (command_line_ == "wq") {
+    } else if (command == "wq") {
         save_file();
         set_mode(Mode::EXIT);
-    } else if (command_line_ == "q") {
+    } else if (command == "q") {
         if (history_.has_unsaved_changes(buffer_.lines)) {
             print_error("No write since last change");
         } else {
             set_mode(Mode::EXIT);
         }
-    } else if (command_line_ == "q!") {
+    } else if (command == "q!") {
         set_mode(Mode::EXIT);
+    } else if (command == "colorscheme" || command == "colo") {
+        if (args.empty()) {
+            // If no arguments are given, print out the current colorscheme name
+            if (!colorscheme_name_.empty()) {
+                print_message(colorscheme_name_);
+            } else {
+                print_error("No colorscheme detected");
+            }
+        } else {
+            // Set the current colorscheme to the argument
+            if (colorschemes_.find(args) != colorschemes_.end()) {
+                set_colorscheme(args);
+            } else {
+                print_error("Cannot find colorscheme '" + args + "'");
+            }
+        }
     } else {
         print_error("Not an editor command: " + command_line_);
     }
