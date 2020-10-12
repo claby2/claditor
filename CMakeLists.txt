@@ -4,8 +4,6 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Curses REQUIRED)
-include_directories(${CURSES_INCLUDE_DIR})
-
 add_executable(
   claditor
   src/main.cpp
@@ -16,4 +14,5 @@ add_executable(
   src/history.cpp
   src/parser.cpp
   src/runtime.cpp)
+target_include_directories(claditor PUBLIC ${CURSES_INCLUDE_DIR})
 target_link_libraries(claditor ${CURSES_LIBRARY})
