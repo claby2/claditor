@@ -45,7 +45,7 @@ void Editor::set_file(std::string file_path) {
 
 void Editor::main() {
     get_colorschemes();
-    state_enter(normal_state);
+    state_enter(&Editor::normal_state);
 }
 
 void Editor::print_buffer() {
@@ -112,7 +112,7 @@ bool Editor::normal_state(int input) {
             normal_delete();
             break;
         case 'g':
-            state_enter(normal_command_g_state);
+            state_enter(&Editor::normal_command_g_state);
             break;
         case 'G':
             normal_end_of_file();
@@ -125,7 +125,7 @@ bool Editor::normal_state(int input) {
             break;
         case 'i':
             set_mode(Mode::INSERT);
-            state_enter(insert_state);
+            state_enter(&Editor::insert_state);
             break;
         case 'o':
             normal_begin_new_line_below();
@@ -134,14 +134,14 @@ bool Editor::normal_state(int input) {
             normal_begin_new_line_above();
             break;
         case 'd':
-            state_enter(normal_command_d_state);
+            state_enter(&Editor::normal_command_d_state);
             break;
         case ':':
             saved_x_ = x_;
             saved_y_ = y_;
             command_line_ = "";
             set_mode(Mode::COMMAND);
-            state_enter(command_state);
+            state_enter(&Editor::command_state);
             break;
         case '1':
         case '2':
@@ -153,7 +153,7 @@ bool Editor::normal_state(int input) {
         case '8':
         case '9':
             normal_add_count(input);
-            state_enter(normal_add_count_state);
+            state_enter(&Editor::normal_add_count_state);
             break;
         default:
             normal_bind_count_.reset();
@@ -166,7 +166,7 @@ bool Editor::insert_state(int input) {
     switch (input) {
         case 27:  // Escape key
             set_mode(Mode::NORMAL);
-            state_enter(normal_state);
+            state_enter(&Editor::normal_state);
             break;
         case 127:  // Backspace key
         case KEY_BACKSPACE:
@@ -187,7 +187,7 @@ bool Editor::command_state(int input) {
     switch (input) {
         case 27:  // Escape key
             set_mode(Mode::NORMAL);
-            state_enter(normal_state);
+            state_enter(&Editor::normal_state);
             break;
         case 127:  // Backspace key
         case KEY_BACKSPACE:
@@ -243,13 +243,13 @@ void Editor::normal_end_of_file() {
 void Editor::normal_append_after_cursor() {
     ++x_;
     set_mode(Mode::INSERT);
-    state_enter(insert_state);
+    state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_append_end_of_line() {
     x_ = buffer_.get_line_length(current_line_);
     set_mode(Mode::INSERT);
-    state_enter(insert_state);
+    state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_begin_new_line_below() {
@@ -257,14 +257,14 @@ void Editor::normal_begin_new_line_below() {
     x_ = 0;
     ++y_;
     set_mode(Mode::INSERT);
-    state_enter(insert_state);
+    state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_begin_new_line_above() {
     buffer_.insert_line("", current_line_);
     x_ = 0;
     set_mode(Mode::INSERT);
-    state_enter(insert_state);
+    state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_first_line() {
@@ -351,7 +351,7 @@ bool Editor::normal_add_count_state(int input) {
         case '8':
         case '9':
             normal_add_count(input);
-            state_enter(normal_add_count_state);
+            state_enter(&Editor::normal_add_count_state);
             break;
         default:
             normal_state(input);
@@ -467,7 +467,7 @@ void Editor::insert_char(int input) {
 void Editor::command_backspace() {
     if (command_line_.empty()) {
         set_mode(Mode::NORMAL);
-        state_enter(insert_state);
+        state_enter(&Editor::insert_state);
     } else {
         command_line_.pop_back();
     }
@@ -477,7 +477,7 @@ void Editor::command_enter() {
     set_mode(Mode::NORMAL);
     parse_command();
     if (mode != Mode::EXIT) {
-        state_enter(normal_state);
+        state_enter(&Editor::normal_state);
     }
 }
 
@@ -547,13 +547,13 @@ void Editor::set_colorscheme(const std::string &new_colorscheme_name) {
 
 void Editor::set_color(ColorType color) const {
     if (has_colors() && !colorscheme_name_.empty()) {
-        attron(COLOR_PAIR(color));
+        attron(COLOR_PAIR(static_cast<short>(color)));
     }
 }
 
 void Editor::unset_color(ColorType color) const {
     if (has_colors() && !colorscheme_name_.empty()) {
-        attroff(COLOR_PAIR(color));
+        attroff(COLOR_PAIR(static_cast<short>(color)));
     }
 }
 
