@@ -208,7 +208,13 @@ void Editor::normal_first_non_blank_char() {
     x_ = buffer_.get_first_non_blank(current_line_);
 }
 
-void Editor::normal_delete() { buffer_.erase(x_, 1, current_line_); }
+void Editor::normal_delete() {
+    buffer_.erase(x_, 1, current_line_);
+    int current_line_length = buffer_.get_line_length(current_line_);
+    if (x_ >= current_line_length) {
+        x_ = current_line_length - 1;
+    }
+}
 
 void Editor::normal_end_of_file() {
     int last_line = buffer_.get_size() - 1;
