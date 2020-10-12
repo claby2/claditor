@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 
+#include "bind_count.hpp"
 #include "buffer.hpp"
 #include "editor.hpp"
 #include "history.hpp"
@@ -144,7 +145,7 @@ bool Editor::normal_state(int input) {
             state_enter(normal_add_count_state);
             break;
         default:
-            normal_bind_count_ = "";
+            normal_bind_count_.reset();
             break;
     }
     return true;
@@ -264,7 +265,6 @@ void Editor::normal_first_line() {
 void Editor::normal_jump_line(int line) {
     // Ensure that line exists in buffer
     line = std::max(0, std::min(buffer_.get_size() - 1, line));
-    normal_bind_count_ = "";
     if (line >= first_line_ && line < first_line_ + LINES - 1) {
         // Target line is already visible
         // There is no need to change first_line_
@@ -295,7 +295,8 @@ void Editor::normal_delete_line() {
 }
 
 void Editor::normal_add_count(int input) {
-    normal_bind_count_ += static_cast<char>(input);
+    // Input represents char, convert to integer
+    normal_bind_count_.add_digit(input - '0');
 }
 
 bool Editor::normal_command_g_state(int input) {
@@ -306,7 +307,7 @@ bool Editor::normal_command_g_state(int input) {
             } else {
                 // Subtract one as buffer is zero indexed while line numbers are
                 // one indexed
-                normal_jump_line(std::stoi(normal_bind_count_) - 1);
+                normal_jump_line(normal_bind_count_.get_value() - 1);
                 // Go to first non blank character of current line which is
                 // equal to the sum of the first line and y_
                 x_ = buffer_.get_first_non_blank(first_line_ + y_);
@@ -371,7 +372,7 @@ void Editor::move_up() {
         x_ = get_adjusted_x();
     } else {
         // Move up by [count] lines
-        normal_jump_line(current_line_ - std::stoi(normal_bind_count_));
+        normal_jump_line(current_line_ - normal_bind_count_.get_value());
         x_ = get_adjusted_x();
     }
 }
@@ -385,8 +386,7 @@ void Editor::move_right() {
     } else {
         // Move right by [count] characters
         x_ = std::min(buffer_.get_line_length(current_line_) - 1,
-                      x_ + std::stoi(normal_bind_count_));
-        normal_bind_count_ = "";
+                      x_ + normal_bind_count_.get_value());
         last_column_ = x_;
     }
 }
@@ -402,7 +402,7 @@ void Editor::move_down() {
         x_ = get_adjusted_x();
     } else {
         // Move down by [count] lines
-        normal_jump_line(current_line_ + std::stoi(normal_bind_count_));
+        normal_jump_line(current_line_ + normal_bind_count_.get_value());
         x_ = get_adjusted_x();
     }
 }
@@ -415,8 +415,7 @@ void Editor::move_left() {
         }
     } else {
         // Move left by [count] characters
-        x_ = std::max(0, x_ - std::stoi(normal_bind_count_));
-        normal_bind_count_ = "";
+        x_ = std::max(0, x_ - normal_bind_count_.get_value());
         last_column_ = x_;
     }
 }
@@ -539,7 +538,7 @@ void Editor::exit_insert_mode() {
     print_message("");
 }
 
-void Editor::exit_normal_mode() { normal_bind_count_ = ""; }
+void Editor::exit_normal_mode() { normal_bind_count_.reset(); }
 
 void Editor::set_mode(Mode new_mode) {
     if (mode != new_mode) {

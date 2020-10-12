@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 
+#include "bind_count.hpp"
 #include "buffer.hpp"
 #include "history.hpp"
 
@@ -28,7 +29,7 @@ class Editor {
     int line_number_width_;
     bool file_started_empty_;
     std::string command_line_;
-    std::string normal_bind_count_;
+    BindCount normal_bind_count_;
     Buffer buffer_;
     History history_;
     std::string file_path_;
