@@ -238,6 +238,7 @@ void Editor::normal_end_of_file() {
         y_ = last_line;
     }
     x_ = buffer_.get_first_non_blank(last_line);
+    last_column_ = x_;
 }
 
 void Editor::normal_append_after_cursor() {
@@ -315,6 +316,7 @@ bool Editor::normal_command_g_state(int input) {
         case 'g':  // Bind: gg
             if (normal_bind_count_.empty()) {
                 normal_first_line();
+                last_column_ = x_;
             } else {
                 // Subtract one as buffer is zero indexed while line numbers are
                 // one indexed
