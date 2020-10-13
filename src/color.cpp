@@ -1,5 +1,3 @@
-#include <ncurses.h>
-
 #include "color.hpp"
 #include "parser.hpp"
 
@@ -17,11 +15,11 @@ Color get_color_from_hex(std::string hex) {
     Color color;
     // Convert rgb values from hex string to zero to 0 - 1000 scale for ncurses
     color.r = static_cast<short>(
-        (std::stoi(hex.substr(1, 2), nullptr, 16) * 1000) / 256);
+        (std::stoi(hex.substr(1, 2), nullptr, 16) * 1000) / 255);
     color.g = static_cast<short>(
-        (std::stoi(hex.substr(3, 2), nullptr, 16) * 1000) / 256);
+        (std::stoi(hex.substr(3, 2), nullptr, 16) * 1000) / 255);
     color.b = static_cast<short>(
-        (std::stoi(hex.substr(5, 2), nullptr, 16) * 1000) / 256);
+        (std::stoi(hex.substr(5, 2), nullptr, 16) * 1000) / 255);
     return color;
 }
 
@@ -53,7 +51,7 @@ Colorscheme::Colorscheme(std::string file_path) {
     background = get_color(parser["background"], BLACK);
     foreground = get_color(parser["foreground"], WHITE);
     comment = get_color(parser["comment"], WHITE);
-    accent = get_color(parser["comment"], WHITE);
+    accent = get_color(parser["accent"], WHITE);
     color1 = get_color(parser["color1"], WHITE);
     color2 = get_color(parser["color2"], WHITE);
     color3 = get_color(parser["color3"], WHITE);
