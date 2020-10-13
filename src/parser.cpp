@@ -19,8 +19,7 @@ Parser::Parser(std::string file_path) {
             delimiter = line.find("//");
             if (delimiter != std::string::npos) {
                 // Remove comments delimited by //
-                // Add one to delimiter as delimiter consists of two characters
-                line = line.substr(0, delimiter + 1);
+                line = line.substr(0, delimiter);
             }
             delimiter = line.find('=');
             if (delimiter != std::string::npos) {
