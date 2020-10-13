@@ -1,5 +1,4 @@
 #include <catch2/catch.hpp>
-#include <iostream>  // TODO: debug
 
 #include "color.hpp"
 
