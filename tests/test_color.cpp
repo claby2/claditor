@@ -7,8 +7,8 @@ bool colors_equal(const Color& color1, const Color& color2) {
 }
 
 bool is_default_colorscheme(const Colorscheme& colorscheme) {
-    Color BLACK = {0, 0, 0};
-    Color WHITE = {255, 255, 255};
+    Color BLACK(0, 0, 0);
+    Color WHITE(1000, 1000, 1000);
     return colors_equal(colorscheme.background, BLACK) &&
            colors_equal(colorscheme.foreground, WHITE) &&
            colors_equal(colorscheme.comment, WHITE) &&

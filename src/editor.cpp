@@ -2,6 +2,7 @@
 #include <ncurses.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <fstream>
 #include <string>
@@ -13,6 +14,8 @@
 #include "editor.hpp"
 #include "history.hpp"
 #include "runtime.hpp"
+
+enum class InputKey : int { ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
 
 Editor::Editor()
     : mode(Mode::NORMAL),
@@ -26,8 +29,7 @@ Editor::Editor()
       line_number_width_(0),
       file_started_empty_(false) {}
 
-void Editor::set_file(std::string file_path) {
-    file_path_ = file_path;
+void Editor::set_file(const std::string &file_path) {
     std::ifstream file;
     file.open(file_path.c_str(), std::ios::in);
     std::string line;
@@ -41,6 +43,7 @@ void Editor::set_file(std::string file_path) {
         buffer_.push_back_line("");
     }
     history_.set(buffer_.lines);
+    file_path_ = file_path;
 }
 
 void Editor::main() {
@@ -164,15 +167,15 @@ bool Editor::normal_state(int input) {
 
 bool Editor::insert_state(int input) {
     switch (input) {
-        case 27:  // Escape key
+        case static_cast<int>(InputKey::ESCAPE):
             set_mode(Mode::NORMAL);
             state_enter(&Editor::normal_state);
             break;
-        case 127:  // Backspace key
+        case static_cast<int>(InputKey::BACKSPACE):
         case KEY_BACKSPACE:
             insert_backspace();
             break;
-        case 10:  // Enter key
+        case static_cast<int>(InputKey::ENTER):
         case KEY_ENTER:
             insert_enter();
             break;
@@ -185,15 +188,15 @@ bool Editor::insert_state(int input) {
 
 bool Editor::command_state(int input) {
     switch (input) {
-        case 27:  // Escape key
+        case static_cast<int>(InputKey::ESCAPE):
             set_mode(Mode::NORMAL);
             state_enter(&Editor::normal_state);
             break;
-        case 127:  // Backspace key
+        case static_cast<int>(InputKey::BACKSPACE):
         case KEY_BACKSPACE:
             command_backspace();
             break;
-        case 10:  // Enter key
+        case static_cast<int>(InputKey::ENTER):
         case KEY_ENTER:
             command_enter();
             break;
@@ -205,7 +208,7 @@ bool Editor::command_state(int input) {
 }
 
 void Editor::state_enter(bool (Editor::*state_callback)(int)) {
-    int input;
+    int input = 0;
     do {
         update();
         print_buffer();
@@ -529,22 +532,24 @@ void Editor::set_colorscheme(const std::string &new_colorscheme_name) {
     colorscheme_name_ = new_colorscheme_name;
     colorscheme_ = colorschemes_[colorscheme_name_];
     // Initialize ncurses colors
-    auto initialize_color = [](short n, Color color) {
-        init_color(n, color.r, color.g, color.b);
-        if (n != 0) {
-            init_pair(n, n, 0);
+    short current_color = 0;
+    auto initialize_color = [&current_color](Color color) {
+        init_color(current_color, color.r, color.g, color.b);
+        if (current_color != 0) {
+            init_pair(current_color, current_color, 0);
         }
+        ++current_color;
     };
-    initialize_color(0, colorscheme_.background);
-    initialize_color(1, colorscheme_.foreground);
-    initialize_color(2, colorscheme_.comment);
-    initialize_color(3, colorscheme_.accent);
-    initialize_color(4, colorscheme_.color1);
-    initialize_color(5, colorscheme_.color2);
-    initialize_color(6, colorscheme_.color3);
-    initialize_color(7, colorscheme_.color4);
-    initialize_color(8, colorscheme_.color5);
-    initialize_color(9, colorscheme_.color6);
+    initialize_color(colorscheme_.background);
+    initialize_color(colorscheme_.foreground);
+    initialize_color(colorscheme_.comment);
+    initialize_color(colorscheme_.accent);
+    initialize_color(colorscheme_.color1);
+    initialize_color(colorscheme_.color2);
+    initialize_color(colorscheme_.color3);
+    initialize_color(colorscheme_.color4);
+    initialize_color(colorscheme_.color5);
+    initialize_color(colorscheme_.color6);
 }
 
 void Editor::set_color(ColorType color) const {
@@ -594,20 +599,16 @@ void Editor::parse_command() {
     } else if (command == "q!") {
         set_mode(Mode::EXIT);
     } else if (command == "colorscheme" || command == "colo") {
-        if (args.empty()) {
-            // If no arguments are given, print out the current colorscheme name
-            if (!colorscheme_name_.empty()) {
-                print_message(colorscheme_name_);
-            } else {
-                print_error("No colorscheme detected");
-            }
+        // If no arguments are given, print the current colorscheme name
+        // Otherwise, set the current colorscheme to the argument
+        if (args.empty() && colorscheme_name_.empty()) {
+            print_error("No colorscheme detected");
+        } else if (args.empty()) {
+            print_message(colorscheme_name_);
+        } else if (colorschemes_.find(args) != colorschemes_.end()) {
+            set_colorscheme(args);
         } else {
-            // Set the current colorscheme to the argument
-            if (colorschemes_.find(args) != colorschemes_.end()) {
-                set_colorscheme(args);
-            } else {
-                print_error("Cannot find colorscheme '" + args + "'");
-            }
+            print_error("Cannot find colorscheme '" + args + "'");
         }
     } else {
         print_error("Not an editor command: " + command_line_);
@@ -623,8 +624,8 @@ void Editor::exit_command_mode() {
 }
 
 void Editor::exit_insert_mode() {
-    int new_y;
-    int new_x;
+    int new_y = 0;
+    int new_x = 0;
     getyx(stdscr, new_y, new_x);
     if (new_x - 1 >= line_number_width_ + 1) {
         --x_;

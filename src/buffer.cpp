@@ -3,7 +3,7 @@
 
 #include "buffer.hpp"
 
-Buffer::Buffer() {}
+Buffer::Buffer() = default;
 
 int Buffer::get_line_length(int row) {
     return static_cast<int>(lines[row].length());
@@ -22,9 +22,9 @@ int Buffer::get_first_non_blank(int row) {
 
 void Buffer::set_line(const std::string &line, int row) { lines[row] = line; }
 
-void Buffer::push_back_line(std::string line) { lines.push_back(line); }
+void Buffer::push_back_line(const std::string &line) { lines.push_back(line); }
 
-void Buffer::insert_line(std::string line, int row) {
+void Buffer::insert_line(const std::string &line, int row) {
     lines.insert(lines.begin() + row, line);
 }
 

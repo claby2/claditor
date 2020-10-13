@@ -6,7 +6,7 @@
 
 #include "parser.hpp"
 
-Parser::Parser(std::string file_path) {
+Parser::Parser(const std::string &file_path) {
     std::ifstream file;
     file.open(file_path.c_str(), std::ios::in);
     std::string line;
@@ -15,7 +15,7 @@ Parser::Parser(std::string file_path) {
         line.erase(std::remove_if(line.begin(), line.end(), ::isspace),
                    line.end());
         if (!line.empty() && line.substr(0, 2) != "//") {
-            std::string::size_type delimiter;
+            std::string::size_type delimiter = 0;
             delimiter = line.find("//");
             if (delimiter != std::string::npos) {
                 // Remove comments delimited by //
@@ -31,7 +31,7 @@ Parser::Parser(std::string file_path) {
     }
 }
 
-std::string Parser::operator[](std::string key) {
+std::string Parser::operator[](const std::string &key) {
     if (content_.find(key) != content_.end()) {
         // Key has been found in content
         return content_[key];

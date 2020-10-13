@@ -29,7 +29,7 @@ class Editor {
     Mode mode;
 
     Editor();
-    void set_file(std::string);
+    void set_file(const std::string&);
     void main();
 
    private:

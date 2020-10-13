@@ -3,7 +3,7 @@
 
 #include "history.hpp"
 
-History::History() {}
+History::History() = default;
 
 bool History::has_unsaved_changes(const std::vector<std::string> &lines) const {
     return lines != lines_;

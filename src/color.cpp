@@ -1,25 +1,35 @@
+#include <utility>
+
 #include "color.hpp"
 #include "parser.hpp"
 
-// Define color constants for fallback
-const Color BLACK = {0, 0, 0};
-const Color WHITE = {255, 255, 255};
-
 bool is_valid_hex(std::string hex) {
-    return hex.length() == 7 && hex[0] == '#' &&
-           (hex.substr(1, 6)).find_first_not_of("0123456789ABCDEFabcdef") ==
+    const int EXPECTED_LENGTH = 7;  // Expected length of the entire string
+    return hex.length() == EXPECTED_LENGTH && hex[0] == '#' &&
+           (hex.substr(1, EXPECTED_LENGTH - 1))
+                   .find_first_not_of("0123456789ABCDEFabcdef") ==
                std::string::npos;
 }
 
-Color get_color_from_hex(std::string hex) {
+short get_scaled_value(const std::string &hex, int n) {
+    // Convert RGB values from hex string to zero to 0 - 1000 scale for ncurses
+    const int SCALED_MAX_VALUE = 1000;
+    const int MAX_VALUE = 255;
+    const int BASE = 16;
+    std::string substring = hex.substr((n * 2) + 1, 2);
+    return static_cast<short>(
+        (std::stoi(substring, nullptr, BASE) * SCALED_MAX_VALUE) / MAX_VALUE);
+}
+
+Color get_black() { return {0, 0, 0}; }
+
+Color get_white() { return {1000, 1000, 1000}; }
+
+Color get_color_from_hex(const std::string &hex) {
     Color color;
-    // Convert rgb values from hex string to zero to 0 - 1000 scale for ncurses
-    color.r = static_cast<short>(
-        (std::stoi(hex.substr(1, 2), nullptr, 16) * 1000) / 255);
-    color.g = static_cast<short>(
-        (std::stoi(hex.substr(3, 2), nullptr, 16) * 1000) / 255);
-    color.b = static_cast<short>(
-        (std::stoi(hex.substr(5, 2), nullptr, 16) * 1000) / 255);
+    color.r = get_scaled_value(hex, 0);
+    color.g = get_scaled_value(hex, 1);
+    color.b = get_scaled_value(hex, 2);
     return color;
 }
 
@@ -33,29 +43,29 @@ Color::Color(short new_r, short new_g, short new_b)
     : r(new_r), g(new_g), b(new_b) {}
 
 Colorscheme::Colorscheme()
-    : background(BLACK),
-      foreground(WHITE),
-      comment(WHITE),
-      accent(WHITE),
-      color1(WHITE),
-      color2(WHITE),
-      color3(WHITE),
-      color4(WHITE),
-      color5(WHITE),
-      color6(WHITE) {}
+    : background(get_black()),
+      foreground(get_white()),
+      comment(get_white()),
+      accent(get_white()),
+      color1(get_white()),
+      color2(get_white()),
+      color3(get_white()),
+      color4(get_white()),
+      color5(get_white()),
+      color6(get_white()) {}
 
-Colorscheme::Colorscheme(std::string file_path) {
+Colorscheme::Colorscheme(const std::string &file_path) {
     // Set colorscheme from path
     Parser parser(file_path);
     // Set colors of colorscheme
-    background = get_color(parser["background"], BLACK);
-    foreground = get_color(parser["foreground"], WHITE);
-    comment = get_color(parser["comment"], WHITE);
-    accent = get_color(parser["accent"], WHITE);
-    color1 = get_color(parser["color1"], WHITE);
-    color2 = get_color(parser["color2"], WHITE);
-    color3 = get_color(parser["color3"], WHITE);
-    color4 = get_color(parser["color4"], WHITE);
-    color5 = get_color(parser["color5"], WHITE);
-    color6 = get_color(parser["color6"], WHITE);
+    background = get_color(parser["background"], get_black());
+    foreground = get_color(parser["foreground"], get_white());
+    comment = get_color(parser["comment"], get_white());
+    accent = get_color(parser["accent"], get_white());
+    color1 = get_color(parser["color1"], get_white());
+    color2 = get_color(parser["color2"], get_white());
+    color3 = get_color(parser["color3"], get_white());
+    color4 = get_color(parser["color4"], get_white());
+    color5 = get_color(parser["color5"], get_white());
+    color6 = get_color(parser["color6"], get_white());
 }

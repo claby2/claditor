@@ -14,7 +14,7 @@ struct Color {
 
 struct Colorscheme {
     Colorscheme();
-    explicit Colorscheme(std::string);
+    explicit Colorscheme(const std::string&);
 
     Color background;
     Color foreground;

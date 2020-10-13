@@ -6,8 +6,8 @@
 
 class Parser {
    public:
-    explicit Parser(std::string);
-    std::string operator[](std::string);
+    explicit Parser(const std::string&);
+    std::string operator[](const std::string&);
 
    private:
     std::unordered_map<std::string, std::string> content_;

@@ -13,8 +13,8 @@ class Buffer {
     int get_size() const;
     int get_first_non_blank(int);
     void set_line(const std::string&, int);
-    void push_back_line(std::string);
-    void insert_line(std::string, int);
+    void push_back_line(const std::string&);
+    void insert_line(const std::string&, int);
     void add_string_to_line(const std::string&, int);
     void erase(int, int, int);
     void insert_char(int, int, char, int);
