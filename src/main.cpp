@@ -14,6 +14,7 @@ void initialize_ncurses() {
     initscr();
     noecho();
     cbreak();
+    raw();
     if (has_colors()) {
         start_color();
         for (size_t i = 0; i < COLORS_DEFINED; ++i) {
