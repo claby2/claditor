@@ -565,14 +565,19 @@ void Editor::unset_color(ColorType color) const {
 }
 
 void Editor::print_message(const std::string &message) {
-    command_line_ = message;
-    mvprintw(LINES - 1, 0, "%s", command_line_.c_str());
+    set_color(ColorType::DEFAULT);
+    mvprintw(LINES - 1, 0, "%s", message.c_str());
     clrtoeol();
     adjusted_move(y_, x_);
+    unset_color(ColorType::DEFAULT);
 }
 
 void Editor::print_error(const std::string &error) {
-    print_message("ERROR: " + error);
+    set_color(ColorType::COLOR1);
+    mvprintw(LINES - 1, 0, "ERROR: %s", error.c_str());
+    clrtoeol();
+    adjusted_move(y_, x_);
+    unset_color(ColorType::COLOR1);
 }
 
 void Editor::parse_command() {
