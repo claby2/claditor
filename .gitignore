@@ -1,4 +1,8 @@
-/claditor*
+/clad*
+/test*
+!/tests
+
+*.a
 
 CMakeLists.txt.user
 CMakeCache.txt

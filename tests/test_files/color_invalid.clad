@@ -1,0 +1,8 @@
+// Invalid colorscheme
+
+// Background has invalid color
+background = #ghijkl
+invalid = #ffffff
+
+// foreground, comment, accent, color1, color2, color3, color4, color5, and 
+// color 6 are not defined
