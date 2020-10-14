@@ -18,7 +18,7 @@ void initialize_ncurses() {
     if (has_colors()) {
         start_color();
         for (size_t i = 0; i < COLORS_DEFINED; ++i) {
-            short index = static_cast<short>(i);
+            short index = i;
             Color color;
             color_content(index, &color.r, &color.g, &color.b);
             init_color(index, color.r, color.g, color.b);
