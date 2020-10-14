@@ -118,7 +118,13 @@ bool Editor::normal_state(int input) {
             state_enter(&Editor::normal_command_g_state);
             break;
         case 'G':
-            normal_end_of_file();
+            if (normal_bind_count_.empty()) {
+                normal_end_of_file();
+            } else {
+                normal_jump_line(normal_bind_count_.get_value() - 1);
+                x_ = buffer_.get_first_non_blank(first_line_ + y_);
+                last_column_ = x_;
+            }
             break;
         case 'a':
             normal_append_after_cursor();
@@ -321,11 +327,7 @@ bool Editor::normal_command_g_state(int input) {
                 normal_first_line();
                 last_column_ = x_;
             } else {
-                // Subtract one as buffer is zero indexed while line numbers are
-                // one indexed
                 normal_jump_line(normal_bind_count_.get_value() - 1);
-                // Go to first non blank character of current line which is
-                // equal to the sum of the first line and y_
                 x_ = buffer_.get_first_non_blank(first_line_ + y_);
                 last_column_ = x_;
             }
