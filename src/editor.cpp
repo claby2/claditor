@@ -11,6 +11,7 @@
 #include "bind_count.hpp"
 #include "buffer.hpp"
 #include "color.hpp"
+#include "command.hpp"
 #include "editor.hpp"
 #include "history.hpp"
 #include "runtime.hpp"
@@ -482,7 +483,7 @@ void Editor::command_backspace() {
 
 void Editor::command_enter() {
     set_mode(Mode::NORMAL);
-    parse_command();
+    run_command();
     if (mode != Mode::EXIT) {
         state_enter(&Editor::normal_state);
     }
@@ -582,43 +583,55 @@ void Editor::print_error(const std::string &error) {
     unset_color(ColorType::COLOR1);
 }
 
-void Editor::parse_command() {
-    std::string command = command_line_;
-    std::string args = "";
+void Editor::run_command() {
     std::string::size_type space_delimiter = command_line_.find(" ");
-    // If has_space_delimiter is true the given command may have additional
-    // arguments
-    if (space_delimiter != std::string::npos) {
-        command = command_line_.substr(0, space_delimiter);
-        args = command_line_.substr(space_delimiter + 1);
-    }
-    if (command == "w") {
-        save_file();
-    } else if (command == "wq") {
-        save_file();
-        set_mode(Mode::EXIT);
-    } else if (command == "q") {
-        if (history_.has_unsaved_changes(buffer_.lines)) {
-            print_error("No write since last change");
-        } else {
-            set_mode(Mode::EXIT);
+    bool has_arg = space_delimiter != std::string::npos;
+    std::string command = command_line_.substr(0, space_delimiter);
+    std::string arg = has_arg ? command_line_.substr(space_delimiter + 1) : "";
+
+    std::vector<Command> commands = get_command(command, arg);
+
+    for (const Command &c : commands) {
+        switch (c) {
+            case Command::WRITE:
+                save_file();
+                break;
+            case Command::QUIT:
+                if (history_.has_unsaved_changes(buffer_.lines)) {
+                    print_error("No write since last change");
+                } else {
+                    set_mode(Mode::EXIT);
+                }
+                break;
+            case Command::FORCE_QUIT:
+                set_mode(Mode::EXIT);
+                break;
+            case Command::PRINT_COLORSCHEME:
+                if (arg.empty() && colorscheme_name_.empty()) {
+                    print_error("No colorscheme detected");
+                } else if (arg.empty()) {
+                    print_message(colorscheme_name_);
+                }
+                break;
+            case Command::SET_COLORSCHEME:
+                if (colorschemes_.find(arg) != colorschemes_.end()) {
+                    set_colorscheme(arg);
+                } else {
+                    print_error("Cannot find colorscheme '" + arg + "'");
+                }
+                break;
+            case Command::JUMP_LINE:
+                normal_jump_line(std::stoi(command) - 1);
+                x_ = buffer_.get_first_non_blank(first_line_ + y_);
+                last_column_ = x_;
+                break;
+            case Command::ERROR_INVALID_COMMAND:
+                print_error("Not an editor command: " + command_line_);
+                break;
+            case Command::ERROR_TRAILING_CHARACTERS:
+                print_error("Trailing characters");
+                break;
         }
-    } else if (command == "q!") {
-        set_mode(Mode::EXIT);
-    } else if (command == "colorscheme" || command == "colo") {
-        // If no arguments are given, print the current colorscheme name
-        // Otherwise, set the current colorscheme to the argument
-        if (args.empty() && colorscheme_name_.empty()) {
-            print_error("No colorscheme detected");
-        } else if (args.empty()) {
-            print_message(colorscheme_name_);
-        } else if (colorschemes_.find(args) != colorschemes_.end()) {
-            set_colorscheme(args);
-        } else {
-            print_error("Cannot find colorscheme '" + args + "'");
-        }
-    } else {
-        print_error("Not an editor command: " + command_line_);
     }
 }
 

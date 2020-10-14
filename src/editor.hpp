@@ -103,7 +103,7 @@ class Editor {
     void unset_color(ColorType) const;
     void print_message(const std::string&);
     void print_error(const std::string&);
-    void parse_command();
+    void run_command();
     void exit_command_mode();
     void exit_insert_mode();
     void exit_normal_mode();

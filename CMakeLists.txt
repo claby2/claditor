@@ -11,6 +11,7 @@ add_library(
   src/bind_count.cpp
   src/buffer.cpp
   src/color.cpp
+  src/command.cpp
   src/editor.cpp
   src/history.cpp
   src/parser.cpp
@@ -20,8 +21,14 @@ if(ENABLE_TESTING)
   find_package(Catch2)
   if(Catch2_FOUND)
     add_executable(
-      test tests/test_main.cpp tests/test_bind_count.cpp tests/test_buffer.cpp
-           tests/test_color.cpp tests/test_history.cpp tests/test_parser.cpp)
+      test
+      tests/test_main.cpp
+      tests/test_bind_count.cpp
+      tests/test_buffer.cpp
+      tests/test_color.cpp
+      tests/test_command.cpp
+      tests/test_history.cpp
+      tests/test_parser.cpp)
     target_include_directories(test PUBLIC src/)
     target_link_libraries(test claditor Catch2::Catch2)
   endif()
