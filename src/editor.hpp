@@ -12,6 +12,13 @@
 
 enum class Mode { EXIT, NORMAL, INSERT, VISUAL, COMMAND };
 
+struct Position {
+    Position();
+    Position(int, int);
+    int y;
+    int x;
+};
+
 class Editor {
    public:
     Mode mode;
@@ -21,12 +28,9 @@ class Editor {
     void main();
 
    private:
-    int x_;
-    int y_;
-    int saved_x_;
-    int saved_y_;
-    int visual_x_;
-    int visual_y_;
+    Position cursor_position_;
+    Position saved_position_;
+    Position visual_position_;
     int last_column_;
     int first_line_;
     int previous_first_line_;
