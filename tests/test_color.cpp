@@ -31,6 +31,22 @@ TEST_CASE("Color constructor") {
     REQUIRE(colors_equal(color, {1, 2, 3}));
 }
 
+TEST_CASE("Color get accent background color pair index") {
+    ColorForeground foreground = ColorForeground::DEFAULT;
+    ColorBackground background = ColorBackground::ACCENT;
+    short index = get_color_pair_index(foreground, background);
+    // Color pair 10
+    REQUIRE(index == 10);
+}
+
+TEST_CASE("Color get default background color pair index") {
+    ColorForeground foreground = ColorForeground::DEFAULT;
+    ColorBackground background = ColorBackground::DEFAULT;
+    short index = get_color_pair_index(foreground, background);
+    // Color pair 1
+    REQUIRE(index == 1);
+}
+
 TEST_CASE("Colorscheme default colorscheme") {
     Colorscheme colorscheme;
     // Test default color scheme
