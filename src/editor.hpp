@@ -12,18 +12,6 @@
 
 enum class Mode { EXIT, NORMAL, INSERT, VISUAL, COMMAND };
 
-enum class ColorType : short {
-    DEFAULT = 1,
-    COMMENT = 2,
-    ACCENT = 3,
-    COLOR1 = 4,
-    COLOR2 = 5,
-    COLOR3 = 6,
-    COLOR4 = 7,
-    COLOR5 = 8,
-    COLOR6 = 9
-};
-
 class Editor {
    public:
     Mode mode;
@@ -37,15 +25,18 @@ class Editor {
     int y_;
     int saved_x_;
     int saved_y_;
+    int visual_x_;
+    int visual_y_;
     int last_column_;
     int first_line_;
     int current_line_;
     int line_number_width_;
+    ColorPair current_color_pair_;
     bool file_started_empty_;
     std::string colorscheme_name_;
     std::string command_line_;
     std::string file_path_;
-    BindCount normal_bind_count_;
+    BindCount bind_count_;
     Buffer buffer_;
     History history_;
     Colorscheme colorscheme_;
@@ -53,10 +44,14 @@ class Editor {
 
     void print_buffer();
     void print_command_line();
+    void clear_command_line();
     void update();
+    bool needs_visual_highlight(int, int);
 
+    void normal_and_visual(int);
     bool normal_state(int);
     bool insert_state(int);
+    bool visual_state(int);
     bool command_state(int);
     void state_enter(bool (Editor::*)(int));
 
@@ -99,14 +94,15 @@ class Editor {
     void save_file();
     void get_colorschemes();
     void set_colorscheme(const std::string&);
-    void set_color(ColorType) const;
-    void unset_color(ColorType) const;
+    void set_color(ColorType, ColorBackground);
+    void unset_color() const;
     void print_message(const std::string&);
     void print_error(const std::string&);
     void run_command();
     void exit_command_mode();
     void exit_insert_mode();
     void exit_normal_mode();
+    void exit_visual_mode();
     void set_mode(Mode);
 };
 #endif

@@ -3,6 +3,9 @@
 #include "color.hpp"
 #include "parser.hpp"
 
+const int COLORS_DEFINED = 10;
+const int PAIRS_DEFINED = 18;
+
 bool is_valid_hex(std::string hex) {
     const int EXPECTED_LENGTH = 7;  // Expected length of the entire string
     return hex.length() == EXPECTED_LENGTH && hex[0] == '#' &&
@@ -68,4 +71,9 @@ Colorscheme::Colorscheme(const std::string &file_path) {
     color4 = get_color(parser["color4"], get_white());
     color5 = get_color(parser["color5"], get_white());
     color6 = get_color(parser["color6"], get_white());
+}
+
+short get_color_pair_index(ColorType color, ColorBackground background) {
+    return (background == ColorBackground::ACCENT ? COLORS_DEFINED : 0) +
+           static_cast<short>(color);
 }
