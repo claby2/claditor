@@ -13,8 +13,8 @@ std::vector<std::pair<short, short>> default_pairs(PAIRS_DEFINED);
 
 std::pair<short, short> get_color_pair(short color_pair) {
     // Return color pair content given color pair index
-    short foreground;
-    short background;
+    short foreground = 0;
+    short background = 0;
     pair_content(color_pair, &foreground, &background);
     return std::make_pair(foreground, background);
 }
@@ -43,7 +43,9 @@ void initialize_ncurses() {
         for (short i = 1; i < PAIRS_DEFINED + 1; ++i) {
             default_pairs[i - 1] = get_color_pair(i);
             short foreground =
-                i < COLORS_DEFINED ? i : (i % COLORS_DEFINED) + 1;
+                i < COLORS_DEFINED
+                    ? static_cast<short>(i)
+                    : static_cast<short>((i % COLORS_DEFINED) + 1);
             short background =
                 i < COLORS_DEFINED ? 0 : static_cast<short>(ColorType::ACCENT);
             init_pair(i, foreground, background);

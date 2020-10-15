@@ -28,6 +28,7 @@ Editor::Editor()
       visual_y_(0),
       last_column_(0),
       first_line_(0),
+      previous_first_line_(0),
       current_line_(0),
       line_number_width_(0),
       current_color_pair_{ColorType::DEFAULT, ColorBackground::DEFAULT},
@@ -56,6 +57,10 @@ void Editor::main() {
 }
 
 void Editor::print_buffer() {
+    bool has_scroll = previous_first_line_ != first_line_;
+    if (has_scroll) {
+        curs_set(0);
+    }
     set_color(ColorType::DEFAULT, ColorBackground::DEFAULT);
     ColorPair default_color_pair = current_color_pair_;
     for (int i = 0; i < LINES - 1; ++i) {
@@ -84,10 +89,17 @@ void Editor::print_buffer() {
                 }
             }
         }
+        if (has_scroll) {
+            refresh();
+        }
         clrtoeol();
     }
     unset_color();
     adjusted_move(y_, x_);
+    if (has_scroll) {
+        curs_set(1);
+    }
+    previous_first_line_ = first_line_;
 }
 
 void Editor::print_command_line() {
@@ -109,6 +121,7 @@ void Editor::clear_command_line() {
 void Editor::update() {
     current_line_ = first_line_ + y_;
     line_number_width_ = std::to_string(buffer_.get_size() + 1).length() + 1;
+    refresh();
 }
 
 bool Editor::needs_visual_highlight(int y, int x) {

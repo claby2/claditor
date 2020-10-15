@@ -29,6 +29,7 @@ class Editor {
     int visual_y_;
     int last_column_;
     int first_line_;
+    int previous_first_line_;
     int current_line_;
     int line_number_width_;
     ColorPair current_color_pair_;
