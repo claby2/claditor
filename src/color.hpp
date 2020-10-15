@@ -6,7 +6,7 @@
 extern const int COLORS_DEFINED;
 extern const int PAIRS_DEFINED;
 
-enum class ColorType : short {
+enum class ColorForeground : short {
     DEFAULT = 1,
     COMMENT = 2,
     ACCENT = 3,
@@ -46,9 +46,9 @@ struct Colorscheme {
 };
 
 struct ColorPair {
-    ColorType foreground;
+    ColorForeground foreground;
     ColorBackground background;
 };
 
-short get_color_pair_index(ColorType, ColorBackground);
+short get_color_pair_index(ColorForeground, ColorBackground);
 #endif

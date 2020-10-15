@@ -31,7 +31,7 @@ Editor::Editor()
       previous_first_line_(0),
       current_line_(0),
       line_number_width_(0),
-      current_color_pair_{ColorType::DEFAULT, ColorBackground::DEFAULT},
+      current_color_pair_{ColorForeground::DEFAULT, ColorBackground::DEFAULT},
       file_started_empty_(false) {}
 
 void Editor::set_file(const std::string &file_path) {
@@ -61,7 +61,7 @@ void Editor::print_buffer() {
     if (has_scroll) {
         curs_set(0);
     }
-    set_color(ColorType::DEFAULT, ColorBackground::DEFAULT);
+    set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     ColorPair default_color_pair = current_color_pair_;
     for (int i = 0; i < LINES - 1; ++i) {
         if (i >= buffer_.get_size()) {
@@ -79,7 +79,8 @@ void Editor::print_buffer() {
                 bool visual_highlight = needs_visual_highlight(i, j);
                 if (visual_highlight) {
                     unset_color();
-                    set_color(ColorType::DEFAULT, ColorBackground::ACCENT);
+                    set_color(ColorForeground::DEFAULT,
+                              ColorBackground::ACCENT);
                 }
                 mvaddch(i, line_number_width_ + 1 + j, line[j]);
                 if (visual_highlight) {
@@ -103,7 +104,7 @@ void Editor::print_buffer() {
 }
 
 void Editor::print_command_line() {
-    set_color(ColorType::DEFAULT, ColorBackground::DEFAULT);
+    set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     if (mode == Mode::COMMAND) {
         mvprintw(LINES - 1, 0, "%s", (':' + command_line_).c_str());
         clrtoeol();
@@ -648,7 +649,7 @@ void Editor::set_colorscheme(const std::string &new_colorscheme_name) {
     initialize_color(colorscheme_.color6);
 }
 
-void Editor::set_color(ColorType foreground, ColorBackground background) {
+void Editor::set_color(ColorForeground foreground, ColorBackground background) {
     if (has_colors() && !colorscheme_name_.empty()) {
         short color_pair = get_color_pair_index(foreground, background);
         attron(COLOR_PAIR(color_pair));
@@ -665,7 +666,7 @@ void Editor::unset_color() const {
 }
 
 void Editor::print_message(const std::string &message) {
-    set_color(ColorType::DEFAULT, ColorBackground::DEFAULT);
+    set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     mvprintw(LINES - 1, 0, "%s", message.c_str());
     clrtoeol();
     adjusted_move(y_, x_);
@@ -673,7 +674,7 @@ void Editor::print_message(const std::string &message) {
 }
 
 void Editor::print_error(const std::string &error) {
-    set_color(ColorType::COLOR1, ColorBackground::DEFAULT);
+    set_color(ColorForeground::COLOR1, ColorBackground::DEFAULT);
     mvprintw(LINES - 1, 0, "ERROR: %s", error.c_str());
     clrtoeol();
     adjusted_move(y_, x_);

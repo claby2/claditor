@@ -47,7 +47,9 @@ void initialize_ncurses() {
                     ? static_cast<short>(i)
                     : static_cast<short>((i % COLORS_DEFINED) + 1);
             short background =
-                i < COLORS_DEFINED ? 0 : static_cast<short>(ColorType::ACCENT);
+                i < COLORS_DEFINED
+                    ? 0
+                    : static_cast<short>(ColorForeground::ACCENT);
             init_pair(i, foreground, background);
         }
     }

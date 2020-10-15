@@ -95,7 +95,7 @@ class Editor {
     void save_file();
     void get_colorschemes();
     void set_colorscheme(const std::string&);
-    void set_color(ColorType, ColorBackground);
+    void set_color(ColorForeground, ColorBackground);
     void unset_color() const;
     void print_message(const std::string&);
     void print_error(const std::string&);
