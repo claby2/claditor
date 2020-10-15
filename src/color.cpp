@@ -76,6 +76,6 @@ Colorscheme::Colorscheme(const std::string &file_path) {
 short get_color_pair_index(ColorForeground foreground,
                            ColorBackground background) {
     return static_cast<short>(
-        (background == ColorBackground::ACCENT ? COLORS_DEFINED : 0) +
+        (background == ColorBackground::ACCENT ? COLORS_DEFINED - 1 : 0) +
         static_cast<short>(foreground));
 }
