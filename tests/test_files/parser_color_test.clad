@@ -6,5 +6,5 @@
 2property   =   2value
 
 // The value of '3property' should be 'second'
-3property = first 
+3property = first
 3property = second

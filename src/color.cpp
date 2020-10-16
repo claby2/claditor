@@ -60,7 +60,7 @@ Colorscheme::Colorscheme()
 
 Colorscheme::Colorscheme(const std::string &file_path) {
     // Set colorscheme from path
-    Parser parser(file_path);
+    Parser parser(FileType::COLOR, file_path);
     // Set colors of colorscheme
     background = get_color(parser["background"], get_black());
     foreground = get_color(parser["foreground"], get_white());

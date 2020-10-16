@@ -102,6 +102,7 @@ class Editor {
     void visual_delete_selection();
 
     void save_file();
+    void get_runtime_configuration();
     void get_colorschemes();
     void set_colorscheme(const std::string&);
     void set_color(ColorForeground, ColorBackground);

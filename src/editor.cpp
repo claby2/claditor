@@ -9,12 +9,14 @@
 #include <fstream>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "bind_count.hpp"
 #include "buffer.hpp"
 #include "color.hpp"
 #include "command.hpp"
 #include "history.hpp"
+#include "parser.hpp"
 #include "runtime.hpp"
 
 enum class InputKey : int { ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
@@ -54,7 +56,9 @@ void Editor::set_file(const std::string &file_path) {
 }
 
 void Editor::main() {
+    refresh();
     get_colorschemes();
+    get_runtime_configuration();
     state_enter(&Editor::normal_state);
 }
 
@@ -679,6 +683,31 @@ void Editor::save_file() {
     file.close();
     history_.set(buffer_.lines);
     print_message("\"" + file_path_ + "\" written");
+}
+
+void Editor::get_runtime_configuration() {
+    std::string home_directory = get_home_directory();
+    const std::vector<std::string> RUNTIME_CONFIGURATION_LOCATIONS = {
+        "/.cladrc",
+        "/.config/claditor/.cladrc",
+    };
+    std::ifstream config;
+    for (const std::string &location : RUNTIME_CONFIGURATION_LOCATIONS) {
+        std::string file_path = home_directory + location;
+        config.open(file_path.c_str(), std::ios::in);
+        if (config) {
+            // Config exists
+            Parser parser(FileType::CONFIG, file_path);
+            std::vector<std::string> command_strings =
+                parser.get_config_content();
+            for (const std::string &command : command_strings) {
+                command_line_ = command;
+                run_command();
+            }
+            clear_command_line();
+            break;
+        }
+    }
 }
 
 void Editor::get_colorschemes() {
