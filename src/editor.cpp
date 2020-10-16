@@ -127,29 +127,37 @@ void Editor::update() {
     refresh();
 }
 
+Position Editor::get_visual_start_position() {
+    // Return position of the start of visual selection
+    if (cursor_position_.y == visual_position_.y) {
+        return {cursor_position_.y,
+                std::min(cursor_position_.x, visual_position_.x)};
+    }
+    if (cursor_position_.y < visual_position_.y) {
+        return cursor_position_;
+    }
+    return visual_position_;
+}
+
+Position Editor::get_visual_end_position() {
+    // Return position of the end of visual selection
+    if (cursor_position_.y == visual_position_.y) {
+        return {cursor_position_.y,
+                std::max(cursor_position_.x, visual_position_.x)};
+    }
+    if (cursor_position_.y < visual_position_.y) {
+        return visual_position_;
+    }
+    return cursor_position_;
+}
+
 bool Editor::needs_visual_highlight(int y, int x) {
     if (mode != Mode::VISUAL ||
         (y == cursor_position_.y && x == cursor_position_.x)) {
         return false;
     }
-    Position start{0, 0};
-    Position end{0, 0};
-    if (cursor_position_.y == visual_position_.y) {
-        start.y = cursor_position_.y;
-        start.x = std::min(cursor_position_.x, visual_position_.x);
-        end.y = cursor_position_.y;
-        end.x = std::max(cursor_position_.x, visual_position_.x);
-    } else if (cursor_position_.y < visual_position_.y) {
-        start.y = cursor_position_.y;
-        start.x = cursor_position_.x;
-        end.y = visual_position_.y;
-        end.x = visual_position_.x;
-    } else {
-        start.y = visual_position_.y;
-        start.x = visual_position_.x;
-        end.y = cursor_position_.y;
-        end.x = cursor_position_.x;
-    }
+    Position start = get_visual_start_position();
+    Position end = get_visual_end_position();
     if (y > start.y && y < end.y) {
         return true;
     }
@@ -285,6 +293,11 @@ bool Editor::visual_state(int input) {
     switch (input) {
         case 'v':
         case static_cast<int>(InputKey::ESCAPE):
+            set_mode(Mode::NORMAL);
+            state_enter(&Editor::normal_state);
+            break;
+        case 'd':
+            visual_delete_selection();
             set_mode(Mode::NORMAL);
             state_enter(&Editor::normal_state);
             break;
@@ -600,6 +613,39 @@ void Editor::command_enter() {
 
 void Editor::command_char(int input) {
     command_line_ += static_cast<char>(input);
+}
+
+void Editor::visual_delete_selection() {
+    Position start = get_visual_start_position();
+    Position end = get_visual_end_position();
+    if (start.y == end.y) {
+        buffer_.erase(start.x, end.x - start.x + 1, start.y);
+    } else {
+        // Erase from start x to end of line
+        buffer_.erase(start.x, buffer_.get_line_length(start.y), start.y);
+        // Concatenate content at end line that will not be erased to the end of
+        // start line
+        // Only concatenate end content if there is at least one character
+        bool concatenate_end_content = buffer_.get_line_length(end.y) > 0;
+        if (concatenate_end_content) {
+            std::string end_content =
+                buffer_.lines[end.y].substr(end.x + 1, std::string::npos);
+            buffer_.add_string_to_line(end_content, start.y);
+        }
+        buffer_.remove_line(end.y);
+        // Delete lines between start and end lines
+        for (int i = 0; i < end.y - start.y - 1; ++i) {
+            buffer_.remove_line(start.y + 1);
+        }
+        if (!concatenate_end_content && start.x == 0) {
+            // If there was no need to concatenate end content, remove the start
+            // line
+            buffer_.remove_line(start.y);
+        }
+    }
+    // Set cursor position to start of selection with adjustment if needed
+    cursor_position_ = {
+        start.y, std::min(buffer_.get_line_length(start.y) - 1, start.x)};
 }
 
 void Editor::save_file() {

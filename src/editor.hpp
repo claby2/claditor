@@ -51,6 +51,8 @@ class Editor {
     void print_command_line();
     void clear_command_line();
     void update();
+    Position get_visual_start_position();
+    Position get_visual_end_position();
     bool needs_visual_highlight(int, int);
 
     void normal_and_visual(int);
@@ -95,6 +97,9 @@ class Editor {
     void command_backspace();
     void command_enter();
     void command_char(int);
+
+    // Visual mode binds
+    void visual_delete_selection();
 
     void save_file();
     void get_colorschemes();
