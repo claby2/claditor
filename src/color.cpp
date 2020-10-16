@@ -1,6 +1,7 @@
+#include "color.hpp"
+
 #include <utility>
 
-#include "color.hpp"
 #include "parser.hpp"
 
 const int COLORS_DEFINED = 10;

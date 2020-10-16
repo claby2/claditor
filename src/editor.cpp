@@ -1,3 +1,5 @@
+#include "editor.hpp"
+
 #include <dirent.h>
 #include <ncurses.h>
 
@@ -12,7 +14,6 @@
 #include "buffer.hpp"
 #include "color.hpp"
 #include "command.hpp"
-#include "editor.hpp"
 #include "history.hpp"
 #include "runtime.hpp"
 

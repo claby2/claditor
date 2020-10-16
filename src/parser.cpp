@@ -1,10 +1,10 @@
+#include "parser.hpp"
+
 #include <algorithm>
 #include <fstream>
 #include <locale>
 #include <string>
 #include <unordered_map>
-
-#include "parser.hpp"
 
 Parser::Parser(const std::string &file_path) {
     std::ifstream file;

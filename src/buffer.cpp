@@ -1,7 +1,7 @@
+#include "buffer.hpp"
+
 #include <string>
 #include <vector>
-
-#include "buffer.hpp"
 
 Buffer::Buffer() = default;
 

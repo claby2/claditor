@@ -1,8 +1,8 @@
+#include "command.hpp"
+
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include "command.hpp"
 
 std::unordered_map<std::string, std::vector<Command>> COMMANDS = {
     {"q", {Command::QUIT}},

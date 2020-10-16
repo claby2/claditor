@@ -1,7 +1,7 @@
+#include "history.hpp"
+
 #include <string>
 #include <vector>
-
-#include "history.hpp"
 
 History::History() = default;
 

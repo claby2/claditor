@@ -1,8 +1,8 @@
+#include "runtime.hpp"
+
 #include <cstdlib>
 #include <cstring>
 #include <string>
-
-#include "runtime.hpp"
 
 std::string get_home_directory() {
     std::string home_directory;
