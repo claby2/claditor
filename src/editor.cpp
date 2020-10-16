@@ -522,8 +522,12 @@ void Editor::move_up() {
 
 void Editor::move_right() {
     if (bind_count_.empty()) {
-        if (cursor_position_.x + 1 < COLS &&
-            cursor_position_.x + 1 < buffer_.get_line_length(current_line_)) {
+        // In normal mode, the cursor should not be ahead of the end of the line
+        if (cursor_position_.x + line_number_width_ + 1 <= COLS &&
+            cursor_position_.x < buffer_.get_line_length(current_line_) &&
+            !(mode == Mode::NORMAL &&
+              cursor_position_.x + 1 >=
+                  buffer_.get_line_length(current_line_))) {
             ++cursor_position_.x;
             last_column_ = cursor_position_.x;
         }
