@@ -37,7 +37,7 @@ class Editor {
     int current_line_;
     int line_number_width_;
     ColorPair current_color_pair_;
-    bool file_started_empty_;
+    bool zero_lines_;
     std::string colorscheme_name_;
     std::string command_line_;
     std::string file_path_;

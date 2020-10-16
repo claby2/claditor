@@ -34,7 +34,7 @@ Editor::Editor()
       current_line_(0),
       line_number_width_(0),
       current_color_pair_{ColorForeground::DEFAULT, ColorBackground::DEFAULT},
-      file_started_empty_(false) {}
+      zero_lines_(false) {}
 
 void Editor::set_file(const std::string &file_path) {
     std::ifstream file;
@@ -46,7 +46,7 @@ void Editor::set_file(const std::string &file_path) {
     if (buffer_.get_size() == 0) {
         // File is empty
         // Add an empty line to prevent segmentation fault when accessing buffer
-        file_started_empty_ = true;
+        zero_lines_ = true;
         buffer_.push_back_line("");
     }
     history_.set(buffer_.lines);
@@ -122,6 +122,10 @@ void Editor::clear_command_line() {
 }
 
 void Editor::update() {
+    if (zero_lines_ &&
+        (buffer_.get_size() != 1 || buffer_.get_line_length(0) > 0)) {
+        zero_lines_ = false;
+    }
     current_line_ = first_line_ + cursor_position_.y;
     line_number_width_ = std::to_string(buffer_.get_size() + 1).length() + 1;
     refresh();
@@ -346,10 +350,13 @@ void Editor::normal_first_non_blank_char() {
 }
 
 void Editor::normal_delete() {
-    buffer_.erase(cursor_position_.x, 1, current_line_);
-    int current_line_length = buffer_.get_line_length(current_line_);
-    if (cursor_position_.x >= current_line_length) {
-        cursor_position_.x = current_line_length - 1;
+    if (buffer_.get_line_length(current_line_) > 0) {
+        buffer_.erase(cursor_position_.x, 1, current_line_);
+        int current_line_length = buffer_.get_line_length(current_line_);
+        if (cursor_position_.x >= current_line_length &&
+            current_line_length > 0) {
+            cursor_position_.x = current_line_length - 1;
+        }
     }
 }
 
@@ -426,6 +433,7 @@ void Editor::normal_delete_line() {
         buffer_.remove_line(current_line_);
         cursor_position_.x = buffer_.get_first_non_blank(current_line_);
     } else {
+        zero_lines_ = true;
         buffer_.set_line("", 0);
         cursor_position_.x = 0;
     }
@@ -642,17 +650,21 @@ void Editor::visual_delete_selection() {
             // line
             buffer_.remove_line(start.y);
         }
+        if (buffer_.get_size() == 0) {
+            zero_lines_ = true;
+            buffer_.push_back_line("");
+        }
     }
     // Set cursor position to start of selection with adjustment if needed
     cursor_position_ = {
-        start.y, std::min(buffer_.get_line_length(start.y) - 1, start.x)};
+        start.y,
+        std::max(0, std::min(buffer_.get_line_length(start.y) - 1, start.x))};
 }
 
 void Editor::save_file() {
     std::ofstream file;
     file.open(file_path_.c_str(), std::ios::out);
-    if (!(file_started_empty_ && buffer_.get_size() == 1 &&
-          buffer_.lines[0].empty())) {
+    if (!zero_lines_) {
         for (const std::string &line : buffer_.lines) {
             file << line << '\n';
         }
