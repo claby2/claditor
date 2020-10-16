@@ -629,27 +629,30 @@ void Editor::visual_delete_selection() {
     if (start.y == end.y) {
         buffer_.erase(start.x, end.x - start.x + 1, start.y);
     } else {
-        // Erase from start x to end of line
+        // Erase selected content
         buffer_.erase(start.x, buffer_.get_line_length(start.y), start.y);
-        // Concatenate content at end line that will not be erased to the end of
-        // start line
-        // Only concatenate end content if there is at least one character
-        bool concatenate_end_content = buffer_.get_line_length(end.y) > 0;
-        if (concatenate_end_content) {
-            std::string end_content =
-                buffer_.lines[end.y].substr(end.x + 1, std::string::npos);
-            buffer_.add_string_to_line(end_content, start.y);
+        for (int i = start.y + 1; i < end.y; ++i) {
+            buffer_.set_line("", i);
         }
-        buffer_.remove_line(end.y);
-        // Delete lines between start and end lines
-        for (int i = 0; i < end.y - start.y - 1; ++i) {
-            buffer_.remove_line(start.y + 1);
+        buffer_.erase(0, end.x + 1, end.y);
+
+        // Concatenate end line and start line
+        if (buffer_.get_line_length(end.y) == 0) {
+            // If end line is currently empty, concatenate with the line after
+            // Ensure that it doesn't exceed maximum lines
+            end.y = std::min(buffer_.get_size() - 1, end.y + 1);
         }
-        if (!concatenate_end_content && start.x == 0) {
-            // If there was no need to concatenate end content, remove the start
-            // line
-            buffer_.remove_line(start.y);
+        buffer_.add_string_to_line(buffer_.lines[end.y], start.y);
+        buffer_.set_line("", end.y);
+
+        // Remove empty lines
+        for (int i = end.y; i >= start.y; --i) {
+            if (buffer_.get_line_length(i) == 0) {
+                buffer_.remove_line(i);
+            }
         }
+
+        // Check if entire buffer was deleted
         if (buffer_.get_size() == 0) {
             zero_lines_ = true;
             buffer_.push_back_line("");
