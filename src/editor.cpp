@@ -1,11 +1,8 @@
 #include "editor.hpp"
 
-#include <dirent.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
-#include <fstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -13,7 +10,9 @@
 #include "bind_count.hpp"
 #include "buffer.hpp"
 #include "color.hpp"
+#include "colorscheme_manager.hpp"
 #include "command.hpp"
+#include "file.hpp"
 #include "history.hpp"
 #include "interface.hpp"
 #include "parser.hpp"
@@ -25,8 +24,8 @@ Position::Position() : y(0), x(0) {}
 
 Position::Position(int new_y, int new_x) : y(new_y), x(new_x) {}
 
-Editor::Editor()
-    : mode(Mode::NORMAL),
+Editor::Editor(const std::string &file_path)
+    : mode_(ModeType::NORMAL),
       cursor_position_(0, 0),
       saved_position_(0, 0),
       visual_position_(0, 0),
@@ -36,28 +35,20 @@ Editor::Editor()
       current_line_(0),
       line_number_width_(0),
       current_color_pair_{ColorForeground::DEFAULT, ColorBackground::DEFAULT},
-      zero_lines_(false) {}
-
-void Editor::set_file(const std::string &file_path) {
-    std::ifstream file;
-    file.open(file_path.c_str(), std::ios::in);
-    std::string line;
-    while (std::getline(file, line)) {
-        buffer_.push_back_line(line);
-    }
+      zero_lines_(false),
+      file_(file_path) {
+    buffer_.lines = file_.get_content();
     if (buffer_.get_size() == 0) {
-        // File is empty
-        // Add an empty line to prevent segmentation fault when accessing buffer
-        zero_lines_ = true;
+        // Add empty line to prevent segmentation fault
         buffer_.push_back_line("");
+        zero_lines_ = true;
     }
-    history_.set(buffer_.lines);
-    file_path_ = file_path;
+    history_.set_content(buffer_.lines);
 }
 
-void Editor::main() {
-    interface_.refresh();
-    get_colorschemes();
+void Editor::start() {
+    Interface::refresh();
+    colorscheme_manager_.fetch_colorschemes();
     get_runtime_configuration();
     state_enter(&Editor::normal_state);
 }
@@ -65,13 +56,13 @@ void Editor::main() {
 void Editor::print_buffer() {
     bool has_scroll = previous_first_line_ != first_line_;
     if (has_scroll) {
-        interface_.cursor_set(0);
+        Interface::cursor_set(0);
     }
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     ColorPair default_color_pair = current_color_pair_;
     for (int i = 0; i < interface_.lines - 1; ++i) {
         if (i >= buffer_.get_size()) {
-            interface_.move_cursor(i, 0);
+            Interface::move_cursor(i, 0);
         } else {
             std::string line_number = std::to_string(first_line_ + i + 1);
             std::string line_number_content =
@@ -79,7 +70,7 @@ void Editor::print_buffer() {
                 line_number;
             std::string line = buffer_.lines[first_line_ + i];
             // Print line number
-            interface_.mv_print(i, 0, line_number_content + ' ');
+            Interface::mv_print(i, 0, line_number_content + ' ');
             // Print characters one by one
             for (size_t j = 0; j < line.length(); ++j) {
                 bool visual_highlight = needs_visual_highlight(i, j);
@@ -88,7 +79,8 @@ void Editor::print_buffer() {
                     set_color(ColorForeground::DEFAULT,
                               ColorBackground::ACCENT);
                 }
-                interface_.mv_print_ch(i, line_number_width_ + 1 + j, line[j]);
+                Interface::mv_print_ch(
+                    i, static_cast<int>(line_number_width_ + 1 + j), line[j]);
                 if (visual_highlight) {
                     unset_color();
                     set_color(default_color_pair.foreground,
@@ -97,31 +89,31 @@ void Editor::print_buffer() {
             }
         }
         if (has_scroll) {
-            interface_.refresh();
+            Interface::refresh();
         }
-        interface_.clear_to_eol();
+        Interface::clear_to_eol();
     }
     unset_color();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     if (has_scroll) {
-        interface_.cursor_set(1);
+        Interface::cursor_set(1);
     }
     previous_first_line_ = first_line_;
 }
 
 void Editor::print_command_line() {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
-    if (mode == Mode::COMMAND) {
-        interface_.mv_print(interface_.lines - 1, 0, ':' + command_line_);
-        interface_.clear_to_eol();
+    if (mode_.get_type() == ModeType::COMMAND) {
+        Interface::mv_print(interface_.lines - 1, 0, ':' + command_line_);
+        Interface::clear_to_eol();
     }
     unset_color();
 }
 
 void Editor::clear_command_line() {
     command_line_ = "";
-    interface_.move_cursor(interface_.lines - 1, 0);
-    interface_.clear_to_eol();
+    Interface::move_cursor(interface_.lines - 1, 0);
+    Interface::clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
 }
 
@@ -132,8 +124,9 @@ void Editor::update() {
         zero_lines_ = false;
     }
     current_line_ = first_line_ + cursor_position_.y;
-    line_number_width_ = std::to_string(buffer_.get_size() + 1).length() + 1;
-    interface_.refresh();
+    line_number_width_ =
+        static_cast<int>(std::to_string(buffer_.get_size() + 1).length() + 1);
+    Interface::refresh();
 }
 
 Position Editor::get_visual_start_position() {
@@ -161,7 +154,7 @@ Position Editor::get_visual_end_position() {
 }
 
 bool Editor::needs_visual_highlight(int y, int x) {
-    if (mode != Mode::VISUAL ||
+    if (mode_.get_type() != ModeType::VISUAL ||
         (y == cursor_position_.y && x == cursor_position_.x)) {
         return false;
     }
@@ -224,7 +217,7 @@ void Editor::normal_and_visual(int input) {
             saved_position_.x = cursor_position_.x;
             saved_position_.y = cursor_position_.y;
             clear_command_line();
-            set_mode(Mode::COMMAND);
+            set_mode(ModeType::COMMAND);
             state_enter(&Editor::command_state);
             break;
         case '1':
@@ -254,11 +247,11 @@ bool Editor::normal_state(int input) {
             normal_append_end_of_line();
             break;
         case 'i':
-            set_mode(Mode::INSERT);
+            set_mode(ModeType::INSERT);
             state_enter(&Editor::insert_state);
             break;
         case 'v':
-            set_mode(Mode::VISUAL);
+            set_mode(ModeType::VISUAL);
             state_enter(&Editor::visual_state);
             break;
         case 'o':
@@ -280,7 +273,7 @@ bool Editor::normal_state(int input) {
 bool Editor::insert_state(int input) {
     switch (input) {
         case static_cast<int>(InputKey::ESCAPE):
-            set_mode(Mode::NORMAL);
+            set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
         case static_cast<int>(InputKey::BACKSPACE):
@@ -300,12 +293,12 @@ bool Editor::visual_state(int input) {
     switch (input) {
         case 'v':
         case static_cast<int>(InputKey::ESCAPE):
-            set_mode(Mode::NORMAL);
+            set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
         case 'd':
             visual_delete_selection();
-            set_mode(Mode::NORMAL);
+            set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
         default:
@@ -318,7 +311,7 @@ bool Editor::visual_state(int input) {
 bool Editor::command_state(int input) {
     switch (input) {
         case static_cast<int>(InputKey::ESCAPE):
-            set_mode(Mode::NORMAL);
+            set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
         case static_cast<int>(InputKey::BACKSPACE):
@@ -340,8 +333,9 @@ void Editor::state_enter(bool (Editor::*state_callback)(int)) {
         update();
         print_buffer();
         print_command_line();
-        input = interface_.get_input();
-    } while ((this->*state_callback)(input) && mode != Mode::EXIT);
+        input = Interface::get_input();
+    } while ((this->*state_callback)(input) &&
+             mode_.get_type() != ModeType::EXIT);
 }
 
 void Editor::normal_first_char() { cursor_position_.x = 0; }
@@ -376,13 +370,13 @@ void Editor::normal_end_of_file() {
 
 void Editor::normal_append_after_cursor() {
     ++cursor_position_.x;
-    set_mode(Mode::INSERT);
+    set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_append_end_of_line() {
     cursor_position_.x = buffer_.get_line_length(current_line_);
-    set_mode(Mode::INSERT);
+    set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
 
@@ -390,14 +384,14 @@ void Editor::normal_begin_new_line_below() {
     buffer_.insert_line("", current_line_ + 1);
     cursor_position_.x = 0;
     ++cursor_position_.y;
-    set_mode(Mode::INSERT);
+    set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_begin_new_line_above() {
     buffer_.insert_line("", current_line_);
     cursor_position_.x = 0;
-    set_mode(Mode::INSERT);
+    set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
 
@@ -504,9 +498,9 @@ int Editor::get_adjusted_x() {
                                        : last_column_;
 }
 
-void Editor::adjusted_move(int y, int x) {
+void Editor::adjusted_move(int y, int x) const {
     // Move cursor with line number width offset
-    interface_.move_cursor(y, line_number_width_ + x + 1);
+    Interface::move_cursor(y, line_number_width_ + x + 1);
 }
 
 void Editor::move_up() {
@@ -529,7 +523,7 @@ void Editor::move_right() {
         // In normal mode, the cursor should not be ahead of the end of the line
         if (cursor_position_.x + line_number_width_ + 1 <= interface_.columns &&
             cursor_position_.x < buffer_.get_line_length(current_line_) &&
-            !(mode == Mode::NORMAL &&
+            !(mode_.get_type() == ModeType::NORMAL &&
               cursor_position_.x + 1 >=
                   buffer_.get_line_length(current_line_))) {
             ++cursor_position_.x;
@@ -612,7 +606,7 @@ void Editor::insert_char(int input) {
 
 void Editor::command_backspace() {
     if (command_line_.empty()) {
-        set_mode(Mode::NORMAL);
+        set_mode(ModeType::NORMAL);
         state_enter(&Editor::insert_state);
     } else {
         command_line_.pop_back();
@@ -620,9 +614,9 @@ void Editor::command_backspace() {
 }
 
 void Editor::command_enter() {
-    set_mode(Mode::NORMAL);
+    set_mode(ModeType::NORMAL);
     run_command();
-    if (mode != Mode::EXIT) {
+    if (mode_.get_type() != ModeType::EXIT) {
         state_enter(&Editor::normal_state);
     }
 }
@@ -674,19 +668,6 @@ void Editor::visual_delete_selection() {
         std::max(0, std::min(buffer_.get_line_length(start.y) - 1, start.x))};
 }
 
-void Editor::save_file() {
-    std::ofstream file;
-    file.open(file_path_.c_str(), std::ios::out);
-    if (!zero_lines_) {
-        for (const std::string &line : buffer_.lines) {
-            file << line << '\n';
-        }
-    }
-    file.close();
-    history_.set(buffer_.lines);
-    print_message("\"" + file_path_ + "\" written");
-}
-
 void Editor::get_runtime_configuration() {
     std::string home_directory = get_home_directory();
     const std::vector<std::string> RUNTIME_CONFIGURATION_LOCATIONS = {
@@ -712,81 +693,42 @@ void Editor::get_runtime_configuration() {
     }
 }
 
-void Editor::get_colorschemes() {
-    // Get colorschemes
-    // Iterate through the runtime colors directory and push back colorschemes
-    std::string home_directory = get_home_directory();
-    std::string colors_directory = home_directory + "/.config/claditor/colors/";
-    DIR *dir;
-    dirent entry;
-    dirent *result;
-    if ((dir = opendir(colors_directory.c_str())) != 0) {
-        while (readdir_r(dir, &entry, &result) == 0 && result != 0) {
-            std::string file_name = entry.d_name;
-            if (file_name.substr(file_name.find_last_of(".") + 1) == "clad") {
-                // File has .clad file extension
-                // Parse the file
-                std::string colorscheme_name =
-                    file_name.substr(0, file_name.find_last_of("."));
-                Colorscheme colorscheme(colors_directory + file_name);
-                colorschemes_[colorscheme_name] = colorscheme;
-            }
-        }
-        closedir(dir);
-    }
-}
-
-void Editor::set_colorscheme(const std::string &new_colorscheme_name) {
-    colorscheme_name_ = new_colorscheme_name;
-    colorscheme_ = colorschemes_[colorscheme_name_];
-    // Initialize ncurses colors
-    short current_color = 0;
-    interface_.initialize_color(current_color, colorscheme_.background);
-    interface_.initialize_color(current_color, colorscheme_.foreground);
-    interface_.initialize_color(current_color, colorscheme_.comment);
-    interface_.initialize_color(current_color, colorscheme_.accent);
-    interface_.initialize_color(current_color, colorscheme_.color1);
-    interface_.initialize_color(current_color, colorscheme_.color2);
-    interface_.initialize_color(current_color, colorscheme_.color3);
-    interface_.initialize_color(current_color, colorscheme_.color4);
-    interface_.initialize_color(current_color, colorscheme_.color5);
-    interface_.initialize_color(current_color, colorscheme_.color6);
-}
-
 void Editor::set_color(ColorForeground foreground, ColorBackground background) {
-    if (interface_.has_color_capability() && !colorscheme_name_.empty()) {
+    if (Interface::has_color_capability() &&
+        colorscheme_manager_.has_colorscheme()) {
         short color_pair = get_color_pair_index(foreground, background);
-        interface_.attribute_on(color_pair);
+        Interface::attribute_on(color_pair);
         current_color_pair_ = {foreground, background};
     }
 }
 
 void Editor::unset_color() {
-    if (interface_.has_color_capability() && !colorscheme_name_.empty()) {
+    if (Interface::has_color_capability() &&
+        colorscheme_manager_.has_colorscheme()) {
         short color_pair = get_color_pair_index(current_color_pair_.foreground,
                                                 current_color_pair_.background);
-        interface_.attribute_off(color_pair);
+        Interface::attribute_off(color_pair);
     }
 }
 
 void Editor::print_message(const std::string &message) {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
-    interface_.mv_print(interface_.lines - 1, 0, message);
-    interface_.clear_to_eol();
+    Interface::mv_print(interface_.lines - 1, 0, message);
+    Interface::clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     unset_color();
 }
 
 void Editor::print_error(const std::string &error) {
     set_color(ColorForeground::COLOR1, ColorBackground::DEFAULT);
-    interface_.mv_print(interface_.lines - 1, 0, "ERROR: " + error);
-    interface_.clear_to_eol();
+    Interface::mv_print(interface_.lines - 1, 0, "ERROR: " + error);
+    Interface::clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     unset_color();
 }
 
 void Editor::run_command() {
-    std::string::size_type space_delimiter = command_line_.find(" ");
+    std::string::size_type space_delimiter = command_line_.find(' ');
     bool has_arg = space_delimiter != std::string::npos;
     std::string command = command_line_.substr(0, space_delimiter);
     std::string arg = has_arg ? command_line_.substr(space_delimiter + 1) : "";
@@ -796,29 +738,29 @@ void Editor::run_command() {
     for (const Command &c : commands) {
         switch (c) {
             case Command::WRITE:
-                save_file();
+                file_.write_content(buffer_.lines);
+                history_.set_content(buffer_.lines);
+                print_message("\"" + file_.get_path() + "\" written");
                 break;
             case Command::QUIT:
                 if (history_.has_unsaved_changes(buffer_.lines)) {
                     print_error("No write since last change");
                 } else {
-                    set_mode(Mode::EXIT);
+                    set_mode(ModeType::EXIT);
                 }
                 break;
             case Command::FORCE_QUIT:
-                set_mode(Mode::EXIT);
+                set_mode(ModeType::EXIT);
                 break;
             case Command::PRINT_COLORSCHEME:
-                if (arg.empty() && colorscheme_name_.empty()) {
+                if (arg.empty() && colorscheme_manager_.has_colorscheme()) {
                     print_error("No colorscheme detected");
                 } else if (arg.empty()) {
-                    print_message(colorscheme_name_);
+                    print_message(colorscheme_manager_.get_current_name());
                 }
                 break;
             case Command::SET_COLORSCHEME:
-                if (colorschemes_.find(arg) != colorschemes_.end()) {
-                    set_colorscheme(arg);
-                } else {
+                if (!colorscheme_manager_.set_colorscheme(arg)) {
                     print_error("Cannot find colorscheme '" + arg + "'");
                 }
                 break;
@@ -841,14 +783,14 @@ void Editor::run_command() {
 void Editor::exit_command_mode() {
     cursor_position_.x = saved_position_.x;
     cursor_position_.y = saved_position_.y;
-    interface_.move_cursor(interface_.lines - 1, 0);
-    interface_.clear_to_eol();
-    interface_.move_cursor(cursor_position_.y, cursor_position_.x);
+    Interface::move_cursor(interface_.lines - 1, 0);
+    Interface::clear_to_eol();
+    Interface::move_cursor(cursor_position_.y, cursor_position_.x);
 }
 
 void Editor::exit_insert_mode() {
     clear_command_line();
-    int new_x = interface_.get_current_x();
+    int new_x = Interface::get_current_x();
     if (new_x - 1 >= line_number_width_ + 1) {
         --cursor_position_.x;
     }
@@ -863,29 +805,29 @@ void Editor::exit_visual_mode() {
     bind_count_.reset();
 }
 
-void Editor::set_mode(Mode new_mode) {
-    if (mode != new_mode) {
-        switch (mode) {
-            case Mode::INSERT:
+void Editor::set_mode(ModeType new_type) {
+    if (mode_.get_type() != new_type) {
+        switch (mode_.get_type()) {
+            case ModeType::INSERT:
                 exit_insert_mode();
                 break;
-            case Mode::COMMAND:
+            case ModeType::COMMAND:
                 exit_command_mode();
                 break;
-            case Mode::NORMAL:
+            case ModeType::NORMAL:
                 exit_normal_mode();
                 break;
-            case Mode::VISUAL:
+            case ModeType::VISUAL:
                 exit_visual_mode();
                 break;
             default:
                 break;
         }
-        switch (new_mode) {
-            case Mode::INSERT:
+        switch (new_type) {
+            case ModeType::INSERT:
                 print_message("-- INSERT --");
                 break;
-            case Mode::VISUAL:
+            case ModeType::VISUAL:
                 print_message("-- VISUAL --");
                 visual_position_.x = cursor_position_.x;
                 visual_position_.y = cursor_position_.y;
@@ -893,6 +835,6 @@ void Editor::set_mode(Mode new_mode) {
             default:
                 break;
         }
-        mode = new_mode;
+        mode_.set_type(new_type);
     }
 }

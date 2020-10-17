@@ -1,6 +1,6 @@
 #include "interface.hpp"
 
-#ifndef TEST
+#ifndef UNIT_TEST
 #include <ncurses.h>
 #endif
 
@@ -8,14 +8,10 @@
 
 #include "color.hpp"
 
-#ifdef TEST
-Interface::Interface() : lines(0), columns(0) {}
-#else
-Interface::Interface() : lines(LINES), columns(COLS) {}
-#endif
+Interface::Interface() : lines(0), columns(0) { update(); }
 
 void Interface::update() {
-#ifdef TEST
+#ifdef UNIT_TEST
     const int MOCK_SIZE = 50;
     lines = MOCK_SIZE;
     columns = MOCK_SIZE;
@@ -26,7 +22,7 @@ void Interface::update() {
 }
 
 int Interface::refresh() {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return wrefresh(stdscr);
@@ -34,7 +30,7 @@ int Interface::refresh() {
 }
 
 int Interface::cursor_set(int visibility) {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return curs_set(visibility);
@@ -42,7 +38,7 @@ int Interface::cursor_set(int visibility) {
 }
 
 int Interface::move_cursor(int y, int x) {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return move(y, x);
@@ -50,7 +46,7 @@ int Interface::move_cursor(int y, int x) {
 }
 
 int Interface::mv_print(int y, int x, const std::string &str) {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return mvprintw(y, x, "%s", str.c_str());
@@ -58,7 +54,7 @@ int Interface::mv_print(int y, int x, const std::string &str) {
 }
 
 int Interface::mv_print_ch(int y, int x, char c) {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return mvaddch(y, x, c);
@@ -66,7 +62,7 @@ int Interface::mv_print_ch(int y, int x, char c) {
 }
 
 int Interface::clear_to_eol() {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return clrtoeol();
@@ -74,7 +70,7 @@ int Interface::clear_to_eol() {
 }
 
 int Interface::attribute_on(short color_pair) {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return attron(COLOR_PAIR(color_pair));
@@ -82,7 +78,7 @@ int Interface::attribute_on(short color_pair) {
 }
 
 int Interface::attribute_off(short color_pair) {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return attroff(COLOR_PAIR(color_pair));
@@ -90,7 +86,7 @@ int Interface::attribute_off(short color_pair) {
 }
 
 int Interface::get_current_y() {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return getcury(stdscr);
@@ -98,7 +94,7 @@ int Interface::get_current_y() {
 }
 
 int Interface::get_current_x() {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return getcurx(stdscr);
@@ -106,7 +102,7 @@ int Interface::get_current_x() {
 }
 
 int Interface::get_input() {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return getch();
@@ -114,17 +110,18 @@ int Interface::get_input() {
 }
 
 int Interface::initialize_color(short &color_number, Color color) {
-#ifdef TEST
-    int result = 1;
+    int result = 0;
+#ifdef UNIT_TEST
+    result = 1;
 #else
-    int result = init_color(color_number, color.r, color.g, color.b);
+    result = init_color(color_number, color.r, color.g, color.b);
 #endif
     ++color_number;
     return result;
 }
 
 bool Interface::has_color_capability() {
-#ifdef TEST
+#ifdef UNIT_TEST
     return 1;
 #else
     return has_colors();

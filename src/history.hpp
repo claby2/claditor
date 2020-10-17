@@ -8,7 +8,7 @@ class History {
    public:
     History();
     bool has_unsaved_changes(const std::vector<std::string>&) const;
-    void set(const std::vector<std::string>&);
+    void set_content(const std::vector<std::string>&);
 
    private:
     std::vector<std::string> lines_;

@@ -8,10 +8,11 @@
 #include "bind_count.hpp"
 #include "buffer.hpp"
 #include "color.hpp"
+#include "colorscheme_manager.hpp"
+#include "file.hpp"
 #include "history.hpp"
 #include "interface.hpp"
-
-enum class Mode { EXIT, NORMAL, INSERT, VISUAL, COMMAND };
+#include "mode.hpp"
 
 struct Position {
     Position();
@@ -22,13 +23,11 @@ struct Position {
 
 class Editor {
    public:
-    Mode mode;
-
-    Editor();
-    void set_file(const std::string&);
-    void main();
+    explicit Editor(const std::string&);
+    void start();
 
    private:
+    Mode mode_;
     Position cursor_position_;
     Position saved_position_;
     Position visual_position_;
@@ -39,15 +38,13 @@ class Editor {
     int line_number_width_;
     ColorPair current_color_pair_;
     bool zero_lines_;
-    std::string colorscheme_name_;
+    File file_;
+    ColorschemeManager colorscheme_manager_;
     std::string command_line_;
-    std::string file_path_;
     BindCount bind_count_;
     Buffer buffer_;
     History history_;
     Interface interface_;
-    Colorscheme colorscheme_;
-    std::unordered_map<std::string, Colorscheme> colorschemes_;
 
     void print_buffer();
     void print_command_line();
@@ -84,7 +81,7 @@ class Editor {
 
     // Standard movement
     int get_adjusted_x();
-    void adjusted_move(int, int);
+    void adjusted_move(int, int) const;
     void move_up();
     void move_right();
     void move_down();
@@ -103,7 +100,6 @@ class Editor {
     // Visual mode binds
     void visual_delete_selection();
 
-    void save_file();
     void get_runtime_configuration();
     void get_colorschemes();
     void set_colorscheme(const std::string&);
@@ -116,6 +112,6 @@ class Editor {
     void exit_insert_mode();
     void exit_normal_mode();
     void exit_visual_mode();
-    void set_mode(Mode);
+    void set_mode(ModeType);
 };
 #endif

@@ -59,10 +59,9 @@ void initialize_ncurses() {
 int main(int argc, char* argv[]) {
     if (argc > 1) {
         std::string file = argv[1];
-        Editor editor;
-        editor.set_file(file);
+        Editor editor(file);
         initialize_ncurses();
-        editor.main();
+        editor.start();
         refresh();
         if (has_colors()) {
             // Restore colors
