@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "color.hpp"
+struct Color;
 
 class Interface {
    public:

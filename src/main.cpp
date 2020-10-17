@@ -4,7 +4,6 @@
 #include <utility>
 #include <vector>
 
-#include "buffer.hpp"
 #include "color.hpp"
 #include "editor.hpp"
 
