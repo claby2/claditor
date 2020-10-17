@@ -14,6 +14,7 @@ add_library(
   src/command.cpp
   src/editor.cpp
   src/history.cpp
+  src/interface.cpp
   src/parser.cpp
   src/runtime.cpp)
 

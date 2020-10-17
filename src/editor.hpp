@@ -9,6 +9,7 @@
 #include "buffer.hpp"
 #include "color.hpp"
 #include "history.hpp"
+#include "interface.hpp"
 
 enum class Mode { EXIT, NORMAL, INSERT, VISUAL, COMMAND };
 
@@ -44,6 +45,7 @@ class Editor {
     BindCount bind_count_;
     Buffer buffer_;
     History history_;
+    Interface interface_;
     Colorscheme colorscheme_;
     std::unordered_map<std::string, Colorscheme> colorschemes_;
 
@@ -106,7 +108,7 @@ class Editor {
     void get_colorschemes();
     void set_colorscheme(const std::string&);
     void set_color(ColorForeground, ColorBackground);
-    void unset_color() const;
+    void unset_color();
     void print_message(const std::string&);
     void print_error(const std::string&);
     void run_command();

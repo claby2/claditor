@@ -15,7 +15,6 @@ TEST_CASE("Parser color file") {
 }
 
 TEST_CASE("Parser config file") {
-    // TODO: write test for config file
     Parser parser(FileType::CONFIG, "tests/test_files/parser_config_test.clad");
     std::vector<std::string> config_content = parser.get_config_content();
     std::vector<std::string> expected_config_content{"colorscheme default",

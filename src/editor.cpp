@@ -1,7 +1,6 @@
 #include "editor.hpp"
 
 #include <dirent.h>
-#include <ncurses.h>
 
 #include <algorithm>
 #include <array>
@@ -16,6 +15,7 @@
 #include "color.hpp"
 #include "command.hpp"
 #include "history.hpp"
+#include "interface.hpp"
 #include "parser.hpp"
 #include "runtime.hpp"
 
@@ -56,7 +56,7 @@ void Editor::set_file(const std::string &file_path) {
 }
 
 void Editor::main() {
-    refresh();
+    interface_.refresh();
     get_colorschemes();
     get_runtime_configuration();
     state_enter(&Editor::normal_state);
@@ -65,13 +65,13 @@ void Editor::main() {
 void Editor::print_buffer() {
     bool has_scroll = previous_first_line_ != first_line_;
     if (has_scroll) {
-        curs_set(0);
+        interface_.cursor_set(0);
     }
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     ColorPair default_color_pair = current_color_pair_;
-    for (int i = 0; i < LINES - 1; ++i) {
+    for (int i = 0; i < interface_.lines - 1; ++i) {
         if (i >= buffer_.get_size()) {
-            move(i, 0);
+            interface_.move_cursor(i, 0);
         } else {
             std::string line_number = std::to_string(first_line_ + i + 1);
             std::string line_number_content =
@@ -79,7 +79,7 @@ void Editor::print_buffer() {
                 line_number;
             std::string line = buffer_.lines[first_line_ + i];
             // Print line number
-            mvprintw(i, 0, "%s", (line_number_content + ' ').c_str());
+            interface_.mv_print(i, 0, line_number_content + ' ');
             // Print characters one by one
             for (size_t j = 0; j < line.length(); ++j) {
                 bool visual_highlight = needs_visual_highlight(i, j);
@@ -88,7 +88,7 @@ void Editor::print_buffer() {
                     set_color(ColorForeground::DEFAULT,
                               ColorBackground::ACCENT);
                 }
-                mvaddch(i, line_number_width_ + 1 + j, line[j]);
+                interface_.mv_print_ch(i, line_number_width_ + 1 + j, line[j]);
                 if (visual_highlight) {
                     unset_color();
                     set_color(default_color_pair.foreground,
@@ -97,14 +97,14 @@ void Editor::print_buffer() {
             }
         }
         if (has_scroll) {
-            refresh();
+            interface_.refresh();
         }
-        clrtoeol();
+        interface_.clear_to_eol();
     }
     unset_color();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     if (has_scroll) {
-        curs_set(1);
+        interface_.cursor_set(1);
     }
     previous_first_line_ = first_line_;
 }
@@ -112,27 +112,28 @@ void Editor::print_buffer() {
 void Editor::print_command_line() {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     if (mode == Mode::COMMAND) {
-        mvprintw(LINES - 1, 0, "%s", (':' + command_line_).c_str());
-        clrtoeol();
+        interface_.mv_print(interface_.lines - 1, 0, ':' + command_line_);
+        interface_.clear_to_eol();
     }
     unset_color();
 }
 
 void Editor::clear_command_line() {
     command_line_ = "";
-    move(LINES - 1, 0);
-    clrtoeol();
+    interface_.move_cursor(interface_.lines - 1, 0);
+    interface_.clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
 }
 
 void Editor::update() {
+    interface_.update();
     if (zero_lines_ &&
         (buffer_.get_size() != 1 || buffer_.get_line_length(0) > 0)) {
         zero_lines_ = false;
     }
     current_line_ = first_line_ + cursor_position_.y;
     line_number_width_ = std::to_string(buffer_.get_size() + 1).length() + 1;
-    refresh();
+    interface_.refresh();
 }
 
 Position Editor::get_visual_start_position() {
@@ -283,11 +284,9 @@ bool Editor::insert_state(int input) {
             state_enter(&Editor::normal_state);
             break;
         case static_cast<int>(InputKey::BACKSPACE):
-        case KEY_BACKSPACE:
             insert_backspace();
             break;
         case static_cast<int>(InputKey::ENTER):
-        case KEY_ENTER:
             insert_enter();
             break;
         default:
@@ -323,11 +322,9 @@ bool Editor::command_state(int input) {
             state_enter(&Editor::normal_state);
             break;
         case static_cast<int>(InputKey::BACKSPACE):
-        case KEY_BACKSPACE:
             command_backspace();
             break;
         case static_cast<int>(InputKey::ENTER):
-        case KEY_ENTER:
             command_enter();
             break;
         default:
@@ -343,7 +340,7 @@ void Editor::state_enter(bool (Editor::*state_callback)(int)) {
         update();
         print_buffer();
         print_command_line();
-        input = getch();
+        input = interface_.get_input();
     } while ((this->*state_callback)(input) && mode != Mode::EXIT);
 }
 
@@ -366,9 +363,9 @@ void Editor::normal_delete() {
 
 void Editor::normal_end_of_file() {
     int last_line = buffer_.get_size() - 1;
-    if (buffer_.get_size() > LINES - 1) {
-        first_line_ = last_line - LINES + 2;
-        cursor_position_.y = LINES - 2;
+    if (buffer_.get_size() > interface_.lines - 1) {
+        first_line_ = last_line - interface_.lines + 2;
+        cursor_position_.y = interface_.lines - 2;
     } else {
         first_line_ = 0;
         cursor_position_.y = last_line;
@@ -413,22 +410,25 @@ void Editor::normal_first_line() {
 void Editor::normal_jump_line(int line) {
     // Ensure that line exists in buffer
     line = std::max(0, std::min(buffer_.get_size() - 1, line));
-    if (line >= first_line_ && line < first_line_ + LINES - 1) {
+    if (line >= first_line_ && line < first_line_ + interface_.lines - 1) {
         // Target line is already visible
         // There is no need to change first_line_
         cursor_position_.y = line - first_line_;
-    } else if (std::abs(line - (first_line_ + std::floor(LINES / 2))) > LINES) {
+    } else if (std::abs(line -
+                        (first_line_ + std::floor(interface_.lines / 2))) >
+               interface_.lines) {
         // Make cursor_position_.y middle point of screen
         first_line_ = std::max(
-            0, std::min(buffer_.get_size() - LINES + 1,
-                        static_cast<int>(line - std::floor(LINES / 2))));
+            0, std::min(
+                   buffer_.get_size() - interface_.lines + 1,
+                   static_cast<int>(line - std::floor(interface_.lines / 2))));
         cursor_position_.y = line - first_line_;
     } else if (line < current_line_) {
         first_line_ = line;
         cursor_position_.y = 0;
     } else {
-        first_line_ = line - LINES + 2;
-        cursor_position_.y = LINES - 2;
+        first_line_ = line - interface_.lines + 2;
+        cursor_position_.y = interface_.lines - 2;
     }
 }
 
@@ -506,7 +506,7 @@ int Editor::get_adjusted_x() {
 
 void Editor::adjusted_move(int y, int x) {
     // Move cursor with line number width offset
-    move(y, line_number_width_ + x + 1);
+    interface_.move_cursor(y, line_number_width_ + x + 1);
 }
 
 void Editor::move_up() {
@@ -527,7 +527,7 @@ void Editor::move_up() {
 void Editor::move_right() {
     if (bind_count_.empty()) {
         // In normal mode, the cursor should not be ahead of the end of the line
-        if (cursor_position_.x + line_number_width_ + 1 <= COLS &&
+        if (cursor_position_.x + line_number_width_ + 1 <= interface_.columns &&
             cursor_position_.x < buffer_.get_line_length(current_line_) &&
             !(mode == Mode::NORMAL &&
               cursor_position_.x + 1 >=
@@ -546,7 +546,7 @@ void Editor::move_right() {
 
 void Editor::move_down() {
     if (bind_count_.empty()) {
-        if (cursor_position_.y + 1 < LINES - 1 &&
+        if (cursor_position_.y + 1 < interface_.lines - 1 &&
             current_line_ + 1 < buffer_.get_size()) {
             ++cursor_position_.y;
         } else if (current_line_ + 1 < buffer_.get_size()) {
@@ -634,6 +634,8 @@ void Editor::command_char(int input) {
 void Editor::visual_delete_selection() {
     Position start = get_visual_start_position();
     Position end = get_visual_end_position();
+    start.y += first_line_;
+    end.y += first_line_;
     if (start.y == end.y) {
         buffer_.erase(start.x, end.x - start.x + 1, start.y);
     } else {
@@ -668,7 +670,7 @@ void Editor::visual_delete_selection() {
     }
     // Set cursor position to start of selection with adjustment if needed
     cursor_position_ = {
-        start.y,
+        start.y - first_line_,
         std::max(0, std::min(buffer_.get_line_length(start.y) - 1, start.x))};
 }
 
@@ -739,50 +741,46 @@ void Editor::set_colorscheme(const std::string &new_colorscheme_name) {
     colorscheme_ = colorschemes_[colorscheme_name_];
     // Initialize ncurses colors
     short current_color = 0;
-    auto initialize_color = [&current_color](Color color) {
-        init_color(current_color, color.r, color.g, color.b);
-        ++current_color;
-    };
-    initialize_color(colorscheme_.background);
-    initialize_color(colorscheme_.foreground);
-    initialize_color(colorscheme_.comment);
-    initialize_color(colorscheme_.accent);
-    initialize_color(colorscheme_.color1);
-    initialize_color(colorscheme_.color2);
-    initialize_color(colorscheme_.color3);
-    initialize_color(colorscheme_.color4);
-    initialize_color(colorscheme_.color5);
-    initialize_color(colorscheme_.color6);
+    interface_.initialize_color(current_color, colorscheme_.background);
+    interface_.initialize_color(current_color, colorscheme_.foreground);
+    interface_.initialize_color(current_color, colorscheme_.comment);
+    interface_.initialize_color(current_color, colorscheme_.accent);
+    interface_.initialize_color(current_color, colorscheme_.color1);
+    interface_.initialize_color(current_color, colorscheme_.color2);
+    interface_.initialize_color(current_color, colorscheme_.color3);
+    interface_.initialize_color(current_color, colorscheme_.color4);
+    interface_.initialize_color(current_color, colorscheme_.color5);
+    interface_.initialize_color(current_color, colorscheme_.color6);
 }
 
 void Editor::set_color(ColorForeground foreground, ColorBackground background) {
-    if (has_colors() && !colorscheme_name_.empty()) {
+    if (interface_.has_color_capability() && !colorscheme_name_.empty()) {
         short color_pair = get_color_pair_index(foreground, background);
-        attron(COLOR_PAIR(color_pair));
+        interface_.attribute_on(color_pair);
         current_color_pair_ = {foreground, background};
     }
 }
 
-void Editor::unset_color() const {
-    if (has_colors() && !colorscheme_name_.empty()) {
+void Editor::unset_color() {
+    if (interface_.has_color_capability() && !colorscheme_name_.empty()) {
         short color_pair = get_color_pair_index(current_color_pair_.foreground,
                                                 current_color_pair_.background);
-        attroff(COLOR_PAIR(color_pair));
+        interface_.attribute_off(color_pair);
     }
 }
 
 void Editor::print_message(const std::string &message) {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
-    mvprintw(LINES - 1, 0, "%s", message.c_str());
-    clrtoeol();
+    interface_.mv_print(interface_.lines - 1, 0, message);
+    interface_.clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     unset_color();
 }
 
 void Editor::print_error(const std::string &error) {
     set_color(ColorForeground::COLOR1, ColorBackground::DEFAULT);
-    mvprintw(LINES - 1, 0, "ERROR: %s", error.c_str());
-    clrtoeol();
+    interface_.mv_print(interface_.lines - 1, 0, "ERROR: " + error);
+    interface_.clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     unset_color();
 }
@@ -843,16 +841,14 @@ void Editor::run_command() {
 void Editor::exit_command_mode() {
     cursor_position_.x = saved_position_.x;
     cursor_position_.y = saved_position_.y;
-    move(LINES - 1, 0);
-    clrtoeol();
-    move(cursor_position_.y, cursor_position_.x);
+    interface_.move_cursor(interface_.lines - 1, 0);
+    interface_.clear_to_eol();
+    interface_.move_cursor(cursor_position_.y, cursor_position_.x);
 }
 
 void Editor::exit_insert_mode() {
     clear_command_line();
-    int new_y = 0;
-    int new_x = 0;
-    getyx(stdscr, new_y, new_x);
+    int new_x = interface_.get_current_x();
     if (new_x - 1 >= line_number_width_ + 1) {
         --cursor_position_.x;
     }
