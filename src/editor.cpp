@@ -137,6 +137,8 @@ Position Editor::get_visual_start_position() {
                  std::min(cursor_position_.x, visual_position_.x)};
     } else if (current_line_ < visual_line_) {
         start = cursor_position_;
+    } else {
+        start.y = visual_line_ - first_line_;
     }
     if (mode_.get_type() == ModeType::VISUAL_LINE) {
         start.x = 0;
@@ -151,10 +153,10 @@ Position Editor::get_visual_end_position() {
         end = {cursor_position_.y,
                std::max(cursor_position_.x, visual_position_.x)};
     } else if (current_line_ < visual_line_) {
-        end = visual_position_;
+        end = {visual_line_ - first_line_, visual_position_.x};
     }
     if (mode_.get_type() == ModeType::VISUAL_LINE) {
-        end.x = buffer_.get_line_length(current_line_) - 1;
+        end.x = buffer_.get_line_length(end.y + first_line_) - 1;
     }
     return end;
 }
