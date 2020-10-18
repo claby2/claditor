@@ -49,6 +49,11 @@ void Editor::start() {
 }
 
 void Editor::print_buffer() {
+    if (first_line_ >= buffer_.get_size()) {
+        // Adjusted first line
+        first_line_ = buffer_.get_size() - 1;
+        cursor_position_.y = 0;
+    }
     bool has_scroll = previous_first_line_ != first_line_;
     if (has_scroll) {
         Interface::cursor_set(0);
@@ -846,7 +851,7 @@ void Editor::exit_insert_mode() {
 void Editor::exit_normal_mode() { bind_count_.reset(); }
 
 void Editor::exit_visual_mode() {
-    // clear_command_line();
+    clear_command_line();
     bind_count_.reset();
 }
 
