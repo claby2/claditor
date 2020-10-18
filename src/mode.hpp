@@ -1,7 +1,7 @@
 #ifndef CLADITOR_MODE_HPP
 #define CLADITOR_MODE_HPP
 
-enum class ModeType { EXIT, NORMAL, INSERT, VISUAL, COMMAND };
+enum class ModeType { EXIT, NORMAL, INSERT, VISUAL, VISUAL_LINE, COMMAND };
 
 class Mode {
    public:

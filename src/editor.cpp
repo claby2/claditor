@@ -27,6 +27,7 @@ Editor::Editor(const std::string &file_path)
       first_line_(0),
       previous_first_line_(0),
       current_line_(0),
+      visual_line_(0),
       line_number_width_(0),
       current_color_pair_{ColorForeground::DEFAULT, ColorBackground::DEFAULT},
       zero_lines_(false),
@@ -55,7 +56,7 @@ void Editor::print_buffer() {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     ColorPair default_color_pair = current_color_pair_;
     for (int i = 0; i < interface_.lines - 1; ++i) {
-        if (i >= buffer_.get_size()) {
+        if (first_line_ + i >= buffer_.get_size()) {
             Interface::move_cursor(i, 0);
         } else {
             std::string line_number = std::to_string(first_line_ + i + 1);
@@ -82,10 +83,10 @@ void Editor::print_buffer() {
                 }
             }
         }
+        Interface::clear_to_eol();
         if (has_scroll) {
             Interface::refresh();
         }
-        Interface::clear_to_eol();
     }
     unset_color();
     adjusted_move(cursor_position_.y, cursor_position_.x);
@@ -125,30 +126,37 @@ void Editor::update() {
 
 Position Editor::get_visual_start_position() {
     // Return position of the start of visual selection
-    if (cursor_position_.y == visual_position_.y) {
-        return {cursor_position_.y,
-                std::min(cursor_position_.x, visual_position_.x)};
+    Position start = visual_position_;
+    if (current_line_ == visual_line_) {
+        start = {cursor_position_.y,
+                 std::min(cursor_position_.x, visual_position_.x)};
+    } else if (current_line_ < visual_line_) {
+        start = cursor_position_;
     }
-    if (cursor_position_.y < visual_position_.y) {
-        return cursor_position_;
+    if (mode_.get_type() == ModeType::VISUAL_LINE) {
+        start.x = 0;
     }
-    return visual_position_;
+    return start;
 }
 
 Position Editor::get_visual_end_position() {
     // Return position of the end of visual selection
-    if (cursor_position_.y == visual_position_.y) {
-        return {cursor_position_.y,
-                std::max(cursor_position_.x, visual_position_.x)};
+    Position end = cursor_position_;
+    if (current_line_ == visual_line_) {
+        end = {cursor_position_.y,
+               std::max(cursor_position_.x, visual_position_.x)};
+    } else if (current_line_ < visual_line_) {
+        end = visual_position_;
     }
-    if (cursor_position_.y < visual_position_.y) {
-        return visual_position_;
+    if (mode_.get_type() == ModeType::VISUAL_LINE) {
+        end.x = buffer_.get_line_length(current_line_) - 1;
     }
-    return cursor_position_;
+    return end;
 }
 
 bool Editor::needs_visual_highlight(int y, int x) {
-    if (mode_.get_type() != ModeType::VISUAL ||
+    if ((mode_.get_type() != ModeType::VISUAL &&
+         mode_.get_type() != ModeType::VISUAL_LINE) ||
         (y == cursor_position_.y && x == cursor_position_.x)) {
         return false;
     }
@@ -246,7 +254,11 @@ bool Editor::normal_state(int input) {
             break;
         case 'v':
             set_mode(ModeType::VISUAL);
-            state_enter(&Editor::visual_state);
+            state_enter(&Editor::visual_regular_state);
+            break;
+        case 'V':
+            set_mode(ModeType::VISUAL_LINE);
+            state_enter(&Editor::visual_line_state);
             break;
         case 'o':
             normal_begin_new_line_below();
@@ -283,9 +295,9 @@ bool Editor::insert_state(int input) {
     return true;
 }
 
-bool Editor::visual_state(int input) {
+void Editor::visual_state(int input) {
+    // Visual binds for all visual mode variations
     switch (input) {
-        case 'v':
         case static_cast<int>(InputKey::ESCAPE):
             set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
@@ -297,6 +309,39 @@ bool Editor::visual_state(int input) {
             break;
         default:
             normal_and_visual(input);
+            break;
+    }
+}
+
+bool Editor::visual_regular_state(int input) {
+    switch (input) {
+        case 'v':
+            set_mode(ModeType::NORMAL);
+            state_enter(&Editor::normal_state);
+            break;
+        case 'V':
+            set_mode(ModeType::VISUAL_LINE);
+            state_enter(&Editor::visual_line_state);
+            break;
+        default:
+            visual_state(input);
+            break;
+    }
+    return true;
+}
+
+bool Editor::visual_line_state(int input) {
+    switch (input) {
+        case 'v':
+            set_mode(ModeType::VISUAL);
+            state_enter(&Editor::visual_regular_state);
+            break;
+        case 'V':
+            set_mode(ModeType::NORMAL);
+            state_enter(&Editor::normal_state);
+            break;
+        default:
+            visual_state(input);
             break;
     }
     return true;
@@ -622,8 +667,14 @@ void Editor::command_char(int input) {
 void Editor::visual_delete_selection() {
     Position start = get_visual_start_position();
     Position end = get_visual_end_position();
-    start.y += first_line_;
-    end.y += first_line_;
+    // Y positions may not equal to the line it represents
+    if (cursor_position_ == start) {
+        start.y = current_line_;
+        end.y = visual_line_;
+    } else {
+        start.y = visual_line_;
+        end.y = current_line_;
+    }
     if (start.y == end.y) {
         buffer_.erase(start.x, end.x - start.x + 1, start.y);
     } else {
@@ -658,7 +709,7 @@ void Editor::visual_delete_selection() {
     }
     // Set cursor position to start of selection with adjustment if needed
     cursor_position_ = {
-        start.y - first_line_,
+        std::min(buffer_.get_size() - 1, start.y) - first_line_,
         std::max(0, std::min(buffer_.get_line_length(start.y) - 1, start.x))};
 }
 
@@ -795,7 +846,7 @@ void Editor::exit_insert_mode() {
 void Editor::exit_normal_mode() { bind_count_.reset(); }
 
 void Editor::exit_visual_mode() {
-    clear_command_line();
+    // clear_command_line();
     bind_count_.reset();
 }
 
@@ -812,6 +863,7 @@ void Editor::set_mode(ModeType new_type) {
                 exit_normal_mode();
                 break;
             case ModeType::VISUAL:
+            case ModeType::VISUAL_LINE:
                 exit_visual_mode();
                 break;
             default:
@@ -823,8 +875,13 @@ void Editor::set_mode(ModeType new_type) {
                 break;
             case ModeType::VISUAL:
                 print_message("-- VISUAL --");
-                visual_position_.x = cursor_position_.x;
-                visual_position_.y = cursor_position_.y;
+                visual_position_ = cursor_position_;
+                visual_line_ = current_line_;
+                break;
+            case ModeType::VISUAL_LINE:
+                print_message("-- V-LINE --");
+                visual_position_ = cursor_position_;
+                visual_line_ = current_line_;
                 break;
             default:
                 break;

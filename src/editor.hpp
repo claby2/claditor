@@ -29,6 +29,7 @@ class Editor {
     int first_line_;
     int previous_first_line_;
     int current_line_;
+    int visual_line_;
     int line_number_width_;
     ColorPair current_color_pair_;
     bool zero_lines_;
@@ -51,7 +52,9 @@ class Editor {
     void normal_and_visual(int);
     bool normal_state(int);
     bool insert_state(int);
-    bool visual_state(int);
+    void visual_state(int);
+    bool visual_regular_state(int);
+    bool visual_line_state(int);
     bool command_state(int);
     void state_enter(bool (Editor::*)(int));
 
