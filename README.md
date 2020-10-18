@@ -17,6 +17,16 @@ $ cmake .
 $ make clad
 ```
 
+## Commands
+
+Pressing `:` in normal mode will set the mode to command mode.
+
+Basic commands:
+
+- `q`: Quit buffer
+- `w`: Write file
+- `colo[rscheme] <name>`: Set the colorscheme to <name>
+
 ## Configuration
 
 ### Runtime Configuration
