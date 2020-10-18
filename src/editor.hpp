@@ -13,13 +13,7 @@
 #include "history.hpp"
 #include "interface.hpp"
 #include "mode.hpp"
-
-struct Position {
-    Position();
-    Position(int, int);
-    int y;
-    int x;
-};
+#include "position.hpp"
 
 class Editor {
    public:

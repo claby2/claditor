@@ -18,6 +18,7 @@ add_library(
   src/history.cpp
   src/mode.cpp
   src/parser.cpp
+  src/position.cpp
   src/runtime.cpp)
 
 if(ENABLE_TESTING)
@@ -36,6 +37,7 @@ if(ENABLE_TESTING)
       tests/test_history.cpp
       tests/test_mode.cpp
       tests/test_parser.cpp
+      tests/test_position.cpp
       src/interface.cpp)
     target_compile_definitions(test PRIVATE UNIT_TEST)
     target_include_directories(test PUBLIC src/)

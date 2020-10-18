@@ -13,13 +13,10 @@
 #include "command.hpp"
 #include "interface.hpp"
 #include "parser.hpp"
+#include "position.hpp"
 #include "runtime.hpp"
 
 enum class InputKey : int { ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
-
-Position::Position() : y(0), x(0) {}
-
-Position::Position(int new_y, int new_x) : y(new_y), x(new_x) {}
 
 Editor::Editor(const std::string &file_path)
     : mode_(ModeType::NORMAL),
