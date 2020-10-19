@@ -280,6 +280,9 @@ bool Editor::normal_state(int input) {
         case 'O':
             normal_begin_new_line_above();
             break;
+        case 'z':
+            state_enter(&Editor::normal_command_z_state);
+            break;
         case 'd':
             state_enter(&Editor::normal_command_d_state);
             break;
@@ -482,6 +485,14 @@ void Editor::normal_jump_line(int line) {
     }
 }
 
+void Editor::normal_center_line(int line) {
+    // Ensure that line exists in buffer
+    line = std::max(0, std::min(buffer_.get_size() - 1, line));
+    first_line_ = std::max(
+        0, static_cast<int>(line - std::floor((interface_.lines - 1) / 2)));
+    cursor_position_.y = line - first_line_;
+}
+
 void Editor::normal_delete_line() {
     if (buffer_.get_size() > 1) {
         buffer_.remove_line(current_line_);
@@ -509,6 +520,19 @@ bool Editor::normal_command_g_state(int input) {
                 cursor_position_.x = buffer_.get_first_non_blank(
                     first_line_ + cursor_position_.y);
                 last_column_ = cursor_position_.x;
+            }
+            break;
+    }
+    return false;
+}
+
+bool Editor::normal_command_z_state(int input) {
+    switch (input) {
+        case 'z':  // Bind: zz
+            if (bind_count_.empty()) {
+                normal_center_line(current_line_);
+            } else {
+                normal_center_line(bind_count_.get_value() - 1);
             }
             break;
     }

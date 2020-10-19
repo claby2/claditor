@@ -71,10 +71,12 @@ class Editor {
     void normal_begin_new_line_above();
     void normal_first_line();
     void normal_jump_line(int);
+    void normal_center_line(int);
     void normal_delete_line();
     void normal_add_count(int);
     // Normal mode command states
     bool normal_command_g_state(int);
+    bool normal_command_z_state(int);
     bool normal_command_d_state(int);
     bool normal_add_count_state(int);
 
