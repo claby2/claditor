@@ -25,7 +25,7 @@ Basic commands:
 
 - `q`: Quit buffer
 - `w`: Write file
-- `colo[rscheme] <name>`: Set the colorscheme to <name>
+- `colo[rscheme] <name>`: Set the colorscheme to `<name>`
 
 ## Configuration
 
