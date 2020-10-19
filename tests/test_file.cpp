@@ -26,3 +26,8 @@ TEST_CASE("File write empty content") {
     bool file_exists = static_cast<bool>(std::ifstream(file_path));
     REQUIRE(file_exists == false);
 }
+
+TEST_CASE("File error on file with tabs") {
+    File file("tests/test_files/file_tab.txt");
+    REQUIRE_THROWS(file.get_content());
+}

@@ -13,6 +13,7 @@
 #include "history.hpp"
 #include "interface.hpp"
 #include "mode.hpp"
+#include "options.hpp"
 #include "position.hpp"
 
 class Editor {
@@ -34,6 +35,7 @@ class Editor {
     ColorPair current_color_pair_;
     bool zero_lines_;
     File file_;
+    Options options_;
     ColorschemeManager colorscheme_manager_;
     std::string command_line_;
     BindCount bind_count_;
@@ -87,6 +89,7 @@ class Editor {
     // Insert mode binds
     void insert_backspace();
     void insert_enter();
+    void insert_tab();
     void insert_char(int);
 
     // Command mode binds

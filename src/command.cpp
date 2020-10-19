@@ -14,7 +14,8 @@ std::unordered_map<std::string, std::vector<Command>> COMMANDS = {
 
 std::unordered_map<std::string, std::vector<Command>> ARG_COMMANDS = {
     {"colo", {Command::SET_COLORSCHEME}},
-    {"colorscheme", {Command::SET_COLORSCHEME}}};
+    {"colorscheme", {Command::SET_COLORSCHEME}},
+    {"set", {Command::SET}}};
 
 bool is_valid_number(const std::string &str) {
     return str[0] != '0' &&

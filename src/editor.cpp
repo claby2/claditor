@@ -12,11 +12,12 @@
 #include "color.hpp"
 #include "command.hpp"
 #include "interface.hpp"
+#include "options.hpp"
 #include "parser.hpp"
 #include "position.hpp"
 #include "runtime.hpp"
 
-enum class InputKey : int { ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
+enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
 
 Editor::Editor(const std::string &file_path)
     : mode_(ModeType::NORMAL),
@@ -64,13 +65,16 @@ void Editor::print_buffer() {
         if (first_line_ + i >= buffer_.get_size()) {
             Interface::move_cursor(i, 0);
         } else {
-            std::string line_number = std::to_string(first_line_ + i + 1);
-            std::string line_number_content =
-                std::string(line_number_width_ - line_number.length(), ' ') +
-                line_number;
             std::string line = buffer_.lines[first_line_ + i];
-            // Print line number
-            Interface::mv_print(i, 0, line_number_content + ' ');
+            if (options_["number"] == 1) {
+                std::string line_number = std::to_string(first_line_ + i + 1);
+                std::string line_number_content =
+                    std::string(line_number_width_ - line_number.length(),
+                                ' ') +
+                    line_number;
+                // Print line number
+                Interface::mv_print(i, 0, line_number_content + ' ');
+            }
             // Print characters one by one
             for (size_t j = 0; j < line.length(); ++j) {
                 bool visual_highlight = needs_visual_highlight(i, j);
@@ -125,7 +129,10 @@ void Editor::update() {
     }
     current_line_ = first_line_ + cursor_position_.y;
     line_number_width_ =
-        static_cast<int>(std::to_string(buffer_.get_size() + 1).length() + 1);
+        (options_["number"] == 1)
+            ? static_cast<int>(std::to_string(buffer_.get_size() + 1).length() +
+                               1)
+            : -1;
     Interface::refresh();
 }
 
@@ -294,6 +301,9 @@ bool Editor::insert_state(int input) {
             break;
         case static_cast<int>(InputKey::ENTER):
             insert_enter();
+            break;
+        case static_cast<int>(InputKey::TAB):
+            insert_tab();
             break;
         default:
             insert_char(input);
@@ -644,6 +654,12 @@ void Editor::insert_enter() {
     ++cursor_position_.y;
 }
 
+void Editor::insert_tab() {
+    buffer_.insert_char(cursor_position_.x, options_["tabsize"], ' ',
+                        current_line_);
+    cursor_position_.x += options_["tabsize"];
+}
+
 void Editor::insert_char(int input) {
     buffer_.insert_char(cursor_position_.x, 1, static_cast<char>(input),
                         current_line_);
@@ -814,6 +830,11 @@ void Editor::run_command() {
             case Command::SET_COLORSCHEME:
                 if (!colorscheme_manager_.set_colorscheme(arg)) {
                     print_error("Cannot find colorscheme '" + arg + "'");
+                }
+                break;
+            case Command::SET:
+                if (!options_.set_option(arg)) {
+                    print_error("Unknown option: " + arg);
                 }
                 break;
             case Command::JUMP_LINE:

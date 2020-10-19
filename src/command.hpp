@@ -10,6 +10,7 @@ enum class Command {
     FORCE_QUIT,
     PRINT_COLORSCHEME,
     SET_COLORSCHEME,
+    SET,
     JUMP_LINE,
 
     // Error

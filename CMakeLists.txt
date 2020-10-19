@@ -17,6 +17,7 @@ add_library(
   src/file.cpp
   src/history.cpp
   src/mode.cpp
+  src/options.cpp
   src/parser.cpp
   src/position.cpp
   src/runtime.cpp)
@@ -36,6 +37,7 @@ if(ENABLE_TESTING)
       tests/test_file.cpp
       tests/test_history.cpp
       tests/test_mode.cpp
+      tests/test_options.cpp
       tests/test_parser.cpp
       tests/test_position.cpp
       src/interface.cpp)
