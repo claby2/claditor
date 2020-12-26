@@ -17,7 +17,7 @@
 #include "position.hpp"
 #include "runtime.hpp"
 
-enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
+enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 263 };
 
 Editor::Editor(const std::string &file_path)
     : mode_(ModeType::NORMAL),
