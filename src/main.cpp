@@ -22,6 +22,7 @@ void initialize_ncurses() {
     initscr();
     noecho();
     cbreak();
+    set_escdelay(0);
     raw();
     if (has_colors()) {
         start_color();
