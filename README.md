@@ -13,7 +13,9 @@ Modal text editor.
 ```shell
 $ git clone https://github.com/claby2/claditor.git
 $ cd claditor
-$ cmake .
+$ mkdir build
+$ cd build
+$ cmake ..
 $ make clad
 ```
 
