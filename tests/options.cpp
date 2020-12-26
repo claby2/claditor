@@ -45,16 +45,26 @@ TEST_CASE("Options set invalid int option with no equal sign") {
 
 TEST_CASE("Options set valid positive bool option") {
     Options options;
-    bool valid_option = options.set_option("number");
-    REQUIRE(valid_option);
+    // Verify that tabs default value is false
+    int initial_value = options["tabs"];
+    CHECK_FALSE(initial_value);
+
+    options.set_option("tabs");
+    int expected = 1;
+    int value = options["tabs"];
+    REQUIRE(value == expected);
 }
 
 TEST_CASE("Options set valid negative bool option") {
     Options options;
+    // Verify that number default value is true
+    int initial_value = options["number"];
+    CHECK(initial_value);
+
     options.set_option("nonumber");
+    int expected = 0;
     int value = options["number"];
-    int expected_value = 0;
-    REQUIRE(value == expected_value);
+    REQUIRE(value == expected);
 }
 
 TEST_CASE("Options set invalid negative bool option") {

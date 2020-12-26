@@ -19,10 +19,6 @@ std::vector<std::string> File::get_content() {
     file.open(file_path_.c_str(), std::ios::in);
     std::string line;
     while (std::getline(file, line)) {
-        if (line.find('\t') != std::string::npos) {
-            // Error if tabs are present
-            throw FileError("Cannot open files with tabs");
-        }
         file_content.push_back(line);
     }
     return file_content;

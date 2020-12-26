@@ -77,15 +77,15 @@ void Editor::print_buffer() {
             }
             // Print characters one by one
             for (size_t j = 0; j < line.length(); ++j) {
-                bool visual_highlight = needs_visual_highlight(i, j);
-                if (visual_highlight) {
+                bool accent = needs_visual_highlight(i, j) || line[j] == '\t';
+                if (accent) {
                     unset_color();
                     set_color(ColorForeground::DEFAULT,
                               ColorBackground::ACCENT);
                 }
                 Interface::mv_print_ch(
                     i, static_cast<int>(line_number_width_ + 1 + j), line[j]);
-                if (visual_highlight) {
+                if (accent) {
                     unset_color();
                     set_color(default_color_pair.foreground,
                               default_color_pair.background);
@@ -497,6 +497,9 @@ void Editor::normal_delete_line() {
     if (buffer_.get_size() > 1) {
         buffer_.remove_line(current_line_);
         cursor_position_.x = buffer_.get_first_non_blank(current_line_);
+        if (current_line_ >= buffer_.get_size()) {
+            --cursor_position_.y;
+        }
     } else {
         zero_lines_ = true;
         buffer_.set_line("", 0);
@@ -679,9 +682,14 @@ void Editor::insert_enter() {
 }
 
 void Editor::insert_tab() {
-    buffer_.insert_char(cursor_position_.x, options_["tabsize"], ' ',
-                        current_line_);
-    cursor_position_.x += options_["tabsize"];
+    if (options_["tabs"]) {
+        buffer_.insert_char(cursor_position_.x, 1, '\t', current_line_);
+        ++cursor_position_.x;
+    } else {
+        buffer_.insert_char(cursor_position_.x, options_["tabsize"], ' ',
+                            current_line_);
+        cursor_position_.x += options_["tabsize"];
+    }
 }
 
 void Editor::insert_char(int input) {

@@ -10,7 +10,8 @@ struct OptionError : public std::runtime_error {
 };
 
 Options::Options()
-    : int_options_{{"tabsize", 4}}, bool_options_{{"number", true}} {}
+    : int_options_{{"tabsize", 4}},
+      bool_options_{{"number", true}, {"tabs", false}} {}
 
 bool Options::set_option(const std::string &option) {
     if (is_int_option_format(option)) {
