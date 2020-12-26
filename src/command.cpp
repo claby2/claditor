@@ -4,19 +4,6 @@
 #include <unordered_map>
 #include <vector>
 
-std::unordered_map<std::string, std::vector<Command>> COMMANDS = {
-    {"q", {Command::QUIT}},
-    {"q!", {Command::FORCE_QUIT}},
-    {"w", {Command::WRITE}},
-    {"wq", {Command::WRITE, Command::QUIT}},
-    {"colo", {Command::PRINT_COLORSCHEME}},
-    {"colorscheme", {Command::PRINT_COLORSCHEME}}};
-
-std::unordered_map<std::string, std::vector<Command>> ARG_COMMANDS = {
-    {"colo", {Command::SET_COLORSCHEME}},
-    {"colorscheme", {Command::SET_COLORSCHEME}},
-    {"set", {Command::SET}}};
-
 bool is_valid_number(const std::string &str) {
     return str[0] != '0' &&
            str.find_first_not_of("0123456789") == std::string::npos;
@@ -34,6 +21,19 @@ std::vector<Command> get_command(const std::string &command,
     if (command.empty()) {
         return commands_vector;
     }
+
+    std::unordered_map<std::string, std::vector<Command>> COMMANDS = {
+        {"q", {Command::QUIT}},
+        {"q!", {Command::FORCE_QUIT}},
+        {"w", {Command::WRITE}},
+        {"wq", {Command::WRITE, Command::QUIT}},
+        {"colo", {Command::PRINT_COLORSCHEME}},
+        {"colorscheme", {Command::PRINT_COLORSCHEME}}};
+
+    std::unordered_map<std::string, std::vector<Command>> ARG_COMMANDS = {
+        {"colo", {Command::SET_COLORSCHEME}},
+        {"colorscheme", {Command::SET_COLORSCHEME}},
+        {"set", {Command::SET}}};
 
     bool has_arg = !arg.empty();
 
