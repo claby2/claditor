@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
-
 #include "options.hpp"
+
+#include <catch2/catch.hpp>
 
 TEST_CASE("Options operator valid int option") {
     Options options;

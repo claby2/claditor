@@ -772,7 +772,7 @@ void Editor::get_runtime_configuration() {
         config.open(file_path.c_str(), std::ios::in);
         if (config) {
             // Config exists
-            Parser parser(FileType::CONFIG, file_path);
+            Parser parser(FileType::CONFIG, config);
             std::vector<std::string> command_strings =
                 parser.get_config_content();
             for (const std::string &command : command_strings) {

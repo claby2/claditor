@@ -2,6 +2,9 @@
 
 #include <dirent.h>
 
+#include <fstream>
+#include <sstream>
+
 #include "color.hpp"
 #include "interface.hpp"
 #include "runtime.hpp"
@@ -21,7 +24,12 @@ void ColorschemeManager::fetch_colorschemes() {
                 // Parse the file
                 std::string colorscheme_name =
                     file_name.substr(0, file_name.find_last_of("."));
-                Colorscheme colorscheme(colors_directory + file_name);
+                std::ifstream file((colors_directory + file_name).c_str(),
+                                   std::ios::in);
+                std::stringstream file_stream;
+                file_stream << file.rdbuf();
+                file.close();
+                Colorscheme colorscheme(file_stream);
                 add_colorscheme(colorscheme_name, colorscheme);
             }
         }

@@ -1,8 +1,8 @@
+#include "command.hpp"
+
 #include <catch2/catch.hpp>
 #include <string>
 #include <vector>
-
-#include "command.hpp"
 
 TEST_CASE("Command error invalid command") {
     std::string command = "invalid_command";

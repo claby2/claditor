@@ -1,8 +1,8 @@
+#include "history.hpp"
+
 #include <catch2/catch.hpp>
 #include <string>
 #include <vector>
-
-#include "history.hpp"
 
 TEST_CASE("History has unsaved changes") {
     History history;

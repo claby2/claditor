@@ -1,3 +1,0 @@
-// This file has tabs
-	
-	This line is tabbed

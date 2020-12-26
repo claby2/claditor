@@ -1,8 +1,4 @@
-/clad*
-/test*
-!/tests
-
-*.a
+build/
 
 CMakeLists.txt.user
 CMakeCache.txt

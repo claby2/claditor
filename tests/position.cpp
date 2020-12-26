@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
-
 #include "position.hpp"
+
+#include <catch2/catch.hpp>
 
 TEST_CASE("Position equal operator") {
     Position position1 = {1, 2};

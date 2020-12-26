@@ -1,7 +1,7 @@
+#include "buffer.hpp"
+
 #include <catch2/catch.hpp>
 #include <string>
-
-#include "buffer.hpp"
 
 TEST_CASE("Buffer initial construction") {
     // Buffer should be empty upon construction

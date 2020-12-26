@@ -27,19 +27,18 @@ if(ENABLE_TESTING)
   if(Catch2_FOUND)
     add_executable(
       test
-      tests/test_main.cpp
-      tests/test_bind_count.cpp
-      tests/test_buffer.cpp
-      tests/test_color.cpp
-      tests/test_colorscheme_manager.cpp
-      tests/test_command.cpp
-      tests/test_editor.cpp
-      tests/test_file.cpp
-      tests/test_history.cpp
-      tests/test_mode.cpp
-      tests/test_options.cpp
-      tests/test_parser.cpp
-      tests/test_position.cpp
+      tests/main.cpp
+      tests/bind_count.cpp
+      tests/buffer.cpp
+      tests/color.cpp
+      tests/colorscheme_manager.cpp
+      tests/command.cpp
+      tests/editor.cpp
+      tests/history.cpp
+      tests/mode.cpp
+      tests/options.cpp
+      tests/parser.cpp
+      tests/position.cpp
       src/interface.cpp)
     target_compile_definitions(test PRIVATE UNIT_TEST)
     target_include_directories(test PUBLIC src/)

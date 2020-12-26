@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
-
 #include "bind_count.hpp"
+
+#include <catch2/catch.hpp>
 
 TEST_CASE("Bind Count initial construction") {
     BindCount bind_count;

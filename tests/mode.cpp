@@ -1,6 +1,6 @@
-#include <catch2/catch.hpp>
-
 #include "mode.hpp"
+
+#include <catch2/catch.hpp>
 
 TEST_CASE("Mode get type") {
     Mode mode(ModeType::VISUAL);

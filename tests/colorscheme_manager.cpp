@@ -1,8 +1,9 @@
+#include "colorscheme_manager.hpp"
+
 #include <catch2/catch.hpp>
 #include <string>
 
 #include "color.hpp"
-#include "colorscheme_manager.hpp"
 
 TEST_CASE("Colorscheme Manager set invalid colorscheme") {
     // Set colorscheme that does not exist

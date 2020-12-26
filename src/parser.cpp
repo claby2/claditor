@@ -7,9 +7,32 @@
 #include <unordered_map>
 #include <vector>
 
-Parser::Parser(FileType type, const std::string &file_path) {
-    file_.open(file_path.c_str(), std::ios::in);
-    switch (type) {
+Parser::Parser(FileType type, std::ifstream &file) : type_(type) {
+    // Constructor is called if an ifstream is given rather than a stringstream
+    if (file) {
+        // Convert the file to stringstream
+        file_stream_ << file.rdbuf();
+        file.close();
+    }
+    set_type();
+}
+
+Parser::Parser(FileType type, const std::stringstream &file_stream)
+    : type_(type) {
+    file_stream_.str(file_stream.str());
+    set_type();
+}
+
+std::unordered_map<std::string, std::string> Parser::get_color_content() const {
+    return color_content_;
+}
+
+std::vector<std::string> Parser::get_config_content() const {
+    return config_content_;
+}
+
+void Parser::set_type() {
+    switch (type_) {
         case FileType::COLOR:
             parse_color_file();
             break;
@@ -19,27 +42,11 @@ Parser::Parser(FileType type, const std::string &file_path) {
         default:
             break;
     }
-    type_ = type;
-}
-
-std::string Parser::operator[](const std::string &key) const {
-    if (type_ == FileType::COLOR) {
-        auto it = color_content_.find(key);
-        if (it != color_content_.end()) {
-            // Key has been found in content
-            return it->second;
-        }
-    }
-    return "";
-}
-
-std::vector<std::string> Parser::get_config_content() const {
-    return config_content_;
 }
 
 void Parser::parse_color_file() {
     std::string line;
-    while (std::getline(file_, line)) {
+    while (std::getline(file_stream_, line, '\n')) {
         // Erase whitespace
         line.erase(std::remove_if(line.begin(), line.end(), ::isspace),
                    line.end());
@@ -58,7 +65,7 @@ void Parser::parse_color_file() {
 
 void Parser::parse_config_file() {
     std::string line;
-    while (std::getline(file_, line)) {
+    while (std::getline(file_stream_, line, '\n')) {
         if (!line.empty() && line.substr(0, 2) != "//") {
             line = remove_comment(line);
             // Remove leading whitespace

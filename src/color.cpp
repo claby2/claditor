@@ -58,20 +58,22 @@ Colorscheme::Colorscheme()
       color5(get_white()),
       color6(get_white()) {}
 
-Colorscheme::Colorscheme(const std::string &file_path) {
+Colorscheme::Colorscheme(const std::stringstream &file_stream) {
     // Set colorscheme from path
-    Parser parser(FileType::COLOR, file_path);
+    Parser parser(FileType::COLOR, file_stream);
+    std::unordered_map<std::string, std::string> color_content =
+        parser.get_color_content();
     // Set colors of colorscheme
-    background = get_color(parser["background"], get_black());
-    foreground = get_color(parser["foreground"], get_white());
-    comment = get_color(parser["comment"], get_white());
-    accent = get_color(parser["accent"], get_white());
-    color1 = get_color(parser["color1"], get_white());
-    color2 = get_color(parser["color2"], get_white());
-    color3 = get_color(parser["color3"], get_white());
-    color4 = get_color(parser["color4"], get_white());
-    color5 = get_color(parser["color5"], get_white());
-    color6 = get_color(parser["color6"], get_white());
+    background = get_color(color_content["background"], get_black());
+    foreground = get_color(color_content["foreground"], get_white());
+    comment = get_color(color_content["comment"], get_white());
+    accent = get_color(color_content["accent"], get_white());
+    color1 = get_color(color_content["color1"], get_white());
+    color2 = get_color(color_content["color2"], get_white());
+    color3 = get_color(color_content["color3"], get_white());
+    color4 = get_color(color_content["color4"], get_white());
+    color5 = get_color(color_content["color5"], get_white());
+    color6 = get_color(color_content["color6"], get_white());
 }
 
 short get_color_pair_index(ColorForeground foreground,
