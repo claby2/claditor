@@ -24,6 +24,12 @@
 
 enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
 
+// Backspace cross-platform compatibility
+#define IS_BACKSPACE                            \
+    case static_cast<int>(InputKey::BACKSPACE): \
+    case KEY_BACKSPACE:                         \
+    case KEY_DC
+
 Editor::Editor(const std::string &file_path)
     : mode_(ModeType::NORMAL),
       cursor_position_(0, 0),
@@ -310,9 +316,7 @@ bool Editor::insert_state(int input) {
             set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
-        case KEY_BACKSPACE:
-        case KEY_DC:
-        case static_cast<int>(InputKey::BACKSPACE):
+        IS_BACKSPACE:
             insert_backspace();
             break;
         case static_cast<int>(InputKey::ENTER):
@@ -386,9 +390,7 @@ bool Editor::command_state(int input) {
             set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
-        case KEY_BACKSPACE:
-        case KEY_DC:
-        case static_cast<int>(InputKey::BACKSPACE):
+        IS_BACKSPACE:
             command_backspace();
             break;
         case static_cast<int>(InputKey::ENTER):
