@@ -6,12 +6,13 @@ Modal text editor.
 
 ### Dependencies
 
-- ncurses
+*   ncurses
+*   cxxopts
 
 ### Building
 
 ```shell
-$ git clone https://github.com/claby2/claditor.git
+$ git clone --recursive https://github.com/claby2/claditor.git
 $ cd claditor
 $ mkdir build
 $ cd build
@@ -25,20 +26,14 @@ Pressing `:` in normal mode will set the mode to command mode.
 
 Basic commands:
 
-- `q`: Quit buffer
-- `w`: Write file
-- `colo[rscheme] <name>`: Set the colorscheme to `<name>`
+*   `q`: Quit buffer
+*   `w`: Write file
 
 ## Configuration
 
 ### Runtime Configuration
 
-`claditor` will search two locations for a runtime configuration:
-
-- `$HOME/.cladrc`
-- `$HOME/.config/claditor/.cladrc`
-
-Each line in a runtime configuration file is interpreted as a command.
+`claditor` will search `$HOME/.config/claditor/cladrc` for a runtime configuration where each line in a runtime configuration file will be interpreted as a command.
 
 ### Colorscheme
 
@@ -47,15 +42,13 @@ Any valid color scheme files here will be parsed and available to use from the e
 
 Example color scheme file `colorscheme.clad`:
 
-```
-background = #101010
-foreground = #d1d1d1
-comment = #808080
-accent = #353535
-color1 = #FF0000
-color2 = #00FF00
-color3 = #FFFF00
-color4 = #0000FF
-color5 = #FF00FF
-color6 = #00FFFF
-```
+    background = #101010
+    foreground = #d1d1d1
+    comment = #808080
+    accent = #353535
+    color1 = #FF0000
+    color2 = #00FF00
+    color3 = #FFFF00
+    color4 = #0000FF
+    color5 = #FF00FF
+    color6 = #00FFFF
