@@ -32,6 +32,7 @@ class Editor {
     int current_line_;
     int visual_line_;
     int line_number_width_;
+    int buffer_lines_;
     ColorPair current_color_pair_;
     bool zero_lines_;
     File file_;

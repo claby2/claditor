@@ -41,6 +41,7 @@ Editor::Editor(const std::string &file_path)
       current_line_(0),
       visual_line_(0),
       line_number_width_(0),
+      buffer_lines_(0),
       current_color_pair_{ColorForeground::DEFAULT, ColorBackground::DEFAULT},
       zero_lines_(false),
       file_(file_path) {
@@ -73,7 +74,7 @@ void Editor::print_buffer() {
     }
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     ColorPair default_color_pair = current_color_pair_;
-    for (int i = 0; i < interface_.lines - 1; ++i) {
+    for (int i = 0; i < buffer_lines_; ++i) {
         if (first_line_ + i >= buffer_.get_size()) {
             Interface::move_cursor(i, 0);
         } else {
@@ -120,7 +121,7 @@ void Editor::print_buffer() {
 void Editor::print_command_line() {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     if (mode_.get_type() == ModeType::COMMAND) {
-        Interface::mv_print(interface_.lines - 1, 0, ':' + command_line_);
+        Interface::mv_print(buffer_lines_, 0, ':' + command_line_);
         Interface::clear_to_eol();
     }
     unset_color();
@@ -128,14 +129,17 @@ void Editor::print_command_line() {
 
 void Editor::clear_command_line() {
     command_line_ = "";
-    Interface::move_cursor(interface_.lines - 1, 0);
+    Interface::move_cursor(buffer_lines_, 0);
     Interface::clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
 }
 
 void Editor::update() {
+    // Number of screen lines used for command-line
+    const int COMMAND_HEIGHT = 1;
     int initial_interface_lines = interface_.lines;
     interface_.update();
+    buffer_lines_ = interface_.lines - COMMAND_HEIGHT;
     // Handle resizing
     if (initial_interface_lines != interface_.lines) {
         normal_center_line(current_line_);
@@ -439,9 +443,9 @@ void Editor::normal_delete() {
 
 void Editor::normal_end_of_file() {
     int last_line = buffer_.get_size() - 1;
-    if (buffer_.get_size() > interface_.lines - 1) {
-        first_line_ = last_line - interface_.lines + 2;
-        cursor_position_.y = interface_.lines - 2;
+    if (buffer_.get_size() > buffer_lines_) {
+        first_line_ = last_line - buffer_lines_ + 1;
+        cursor_position_.y = buffer_lines_ - 1;
     } else {
         first_line_ = 0;
         cursor_position_.y = last_line;
@@ -465,7 +469,7 @@ void Editor::normal_append_end_of_line() {
 void Editor::normal_begin_new_line_below() {
     buffer_.insert_line("", current_line_ + 1);
     cursor_position_.x = 0;
-    if (cursor_position_.y >= interface_.lines - 2) {
+    if (cursor_position_.y >= buffer_lines_ - 1) {
         ++first_line_;
     } else {
         ++cursor_position_.y;
@@ -490,7 +494,7 @@ void Editor::normal_first_line() {
 void Editor::normal_jump_line(int line) {
     // Ensure that line exists in buffer
     line = std::max(0, std::min(buffer_.get_size() - 1, line));
-    if (line >= first_line_ && line < first_line_ + interface_.lines - 1) {
+    if (line >= first_line_ && line < first_line_ + buffer_lines_) {
         // Target line is already visible
         // There is no need to change first_line_
         cursor_position_.y = line - first_line_;
@@ -500,23 +504,23 @@ void Editor::normal_jump_line(int line) {
         // Make cursor_position_.y middle point of screen
         first_line_ = std::max(
             0, std::min(
-                   buffer_.get_size() - interface_.lines + 1,
+                   buffer_.get_size() - buffer_lines_,
                    static_cast<int>(line - std::floor(interface_.lines / 2))));
         cursor_position_.y = line - first_line_;
     } else if (line < current_line_) {
         first_line_ = line;
         cursor_position_.y = 0;
     } else {
-        first_line_ = line - interface_.lines + 2;
-        cursor_position_.y = interface_.lines - 2;
+        first_line_ = line - buffer_lines_ + 1;
+        cursor_position_.y = buffer_lines_ - 1;
     }
 }
 
 void Editor::normal_center_line(int line) {
     // Ensure that line exists in buffer
     line = std::max(0, std::min(buffer_.get_size() - 1, line));
-    first_line_ = std::max(
-        0, static_cast<int>(line - std::floor((interface_.lines - 1) / 2)));
+    first_line_ =
+        std::max(0, static_cast<int>(line - std::floor((buffer_lines_) / 2)));
     cursor_position_.y = line - first_line_;
 }
 
@@ -542,7 +546,7 @@ void Editor::normal_add_count(int input) {
 void Editor::normal_page_down() {
     // Bottom line on screen becomes the first line
     first_line_ =
-        std::min(first_line_ + interface_.lines - 2, buffer_.get_size() - 1);
+        std::min(first_line_ + buffer_lines_ - 1, buffer_.get_size() - 1);
     if (first_line_ + cursor_position_.y >= buffer_.get_size()) {
         normal_end_of_file();
     }
@@ -550,7 +554,7 @@ void Editor::normal_page_down() {
 
 void Editor::normal_page_up() {
     // First line on screen bcomes the bottom line
-    first_line_ = std::max(first_line_ - interface_.lines + 2, 0);
+    first_line_ = std::max(first_line_ - buffer_lines_ + 1, 0);
 }
 
 bool Editor::normal_command_g_state(int input) {
@@ -664,7 +668,7 @@ void Editor::move_right() {
 
 void Editor::move_down() {
     if (bind_count_.empty()) {
-        if (cursor_position_.y + 1 < interface_.lines - 1 &&
+        if (cursor_position_.y + 1 < buffer_lines_ &&
             current_line_ + 1 < buffer_.get_size()) {
             ++cursor_position_.y;
         } else if (current_line_ + 1 < buffer_.get_size()) {
@@ -720,7 +724,7 @@ void Editor::insert_enter() {
         buffer_.insert_line("", current_line_ + 1);
     }
     cursor_position_.x = 0;
-    if (cursor_position_.y >= interface_.lines - 2) {
+    if (cursor_position_.y >= buffer_lines_ - 1) {
         // If cursor is at the bottom of the screen, only increase first line
         ++first_line_;
     } else {
@@ -860,7 +864,7 @@ void Editor::unset_color() {
 
 void Editor::print_message(const std::string &message) {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
-    Interface::mv_print(interface_.lines - 1, 0, message);
+    Interface::mv_print(buffer_lines_, 0, message);
     Interface::clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     unset_color();
@@ -868,7 +872,7 @@ void Editor::print_message(const std::string &message) {
 
 void Editor::print_error(const std::string &error) {
     set_color(ColorForeground::COLOR1, ColorBackground::DEFAULT);
-    Interface::mv_print(interface_.lines - 1, 0, "ERROR: " + error);
+    Interface::mv_print(buffer_lines_, 0, "ERROR: " + error);
     Interface::clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     unset_color();
@@ -935,7 +939,7 @@ void Editor::run_command() {
 void Editor::exit_command_mode() {
     cursor_position_.x = saved_position_.x;
     cursor_position_.y = saved_position_.y;
-    Interface::move_cursor(interface_.lines - 1, 0);
+    Interface::move_cursor(buffer_lines_, 0);
     Interface::clear_to_eol();
     Interface::move_cursor(cursor_position_.y, cursor_position_.x);
 }
