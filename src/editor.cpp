@@ -1,5 +1,7 @@
 #include "editor.hpp"
 
+#include <ncurses.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -20,7 +22,7 @@
 // Return the equivalent input code when input and ctrl keys are held together
 #define ctrl(input) ((input)&0x1f)
 
-enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 263 };
+enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
 
 Editor::Editor(const std::string &file_path)
     : mode_(ModeType::NORMAL),
@@ -308,6 +310,8 @@ bool Editor::insert_state(int input) {
             set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
+        case KEY_BACKSPACE:
+        case KEY_DC:
         case static_cast<int>(InputKey::BACKSPACE):
             insert_backspace();
             break;
@@ -382,6 +386,8 @@ bool Editor::command_state(int input) {
             set_mode(ModeType::NORMAL);
             state_enter(&Editor::normal_state);
             break;
+        case KEY_BACKSPACE:
+        case KEY_DC:
         case static_cast<int>(InputKey::BACKSPACE):
             command_backspace();
             break;
@@ -525,7 +531,7 @@ void Editor::normal_page_down() {
     // Bottom line on screen becomes the first line
     first_line_ =
         std::min(first_line_ + interface_.lines - 2, buffer_.get_size() - 1);
-    if(first_line_ + cursor_position_.y >= buffer_.get_size()) {
+    if (first_line_ + cursor_position_.y >= buffer_.get_size()) {
         normal_end_of_file();
     }
 }

@@ -33,7 +33,6 @@ if(ENABLE_TESTING)
       tests/color.cpp
       tests/colorscheme_manager.cpp
       tests/command.cpp
-      tests/editor.cpp
       tests/history.cpp
       tests/mode.cpp
       tests/options.cpp
