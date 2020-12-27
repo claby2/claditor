@@ -1,6 +1,7 @@
 #include "color.hpp"
 
 #include <catch2/catch.hpp>
+#include <sstream>
 
 bool colors_equal(const Color &color1, const Color &color2) {
     return color1.r == color2.r && color1.g == color2.g && color1.b == color2.b;
