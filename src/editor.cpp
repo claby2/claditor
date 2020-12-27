@@ -459,7 +459,11 @@ void Editor::normal_append_end_of_line() {
 void Editor::normal_begin_new_line_below() {
     buffer_.insert_line("", current_line_ + 1);
     cursor_position_.x = 0;
-    ++cursor_position_.y;
+    if (cursor_position_.y >= interface_.lines - 2) {
+        ++first_line_;
+    } else {
+        ++cursor_position_.y;
+    }
     set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
@@ -697,7 +701,8 @@ void Editor::insert_backspace() {
 }
 
 void Editor::insert_enter() {
-    if (cursor_position_.x < buffer_.lines[current_line_].length()) {
+    if (static_cast<std::string::size_type>(cursor_position_.x) <
+        buffer_.lines[current_line_].length()) {
         // Move substring down
         int substring_length =
             buffer_.get_line_length(current_line_) - cursor_position_.x;
@@ -709,7 +714,12 @@ void Editor::insert_enter() {
         buffer_.insert_line("", current_line_ + 1);
     }
     cursor_position_.x = 0;
-    ++cursor_position_.y;
+    if (cursor_position_.y >= interface_.lines - 2) {
+        // If cursor is at the bottom of the screen, only increase first line
+        ++first_line_;
+    } else {
+        ++cursor_position_.y;
+    }
 }
 
 void Editor::insert_tab() {
