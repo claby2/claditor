@@ -4,50 +4,66 @@
 #include <string>
 #include <vector>
 
+bool command_equal(const Command &command1, const Command &command2) {
+    // Compare if two commands are equal
+    return command1.type == command2.type &&
+           command1.content == command2.content && command1.arg == command2.arg;
+}
+
+bool commands_equal(const std::vector<Command> &commands1,
+                    const std::vector<Command> &commands2) {
+    // Compare if two vector of commands are equal
+    if (commands1.size() != commands2.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < commands1.size(); ++i) {
+        if (!command_equal(commands1[i], commands2[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 TEST_CASE("Command error invalid command") {
-    std::string command = "invalid_command";
-    std::string arg = "";
-    std::vector<Command> commands = get_command(command, arg);
-    std::vector<Command> expected_commands{Command::ERROR_INVALID_COMMAND};
-    REQUIRE(commands == expected_commands);
+    std::vector<Command> commands = get_command("invalid_command");
+    std::vector<Command> expected{
+        {CommandType::ERROR_INVALID_COMMAND, "invalid_command", ""}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
 }
 
 TEST_CASE("Command error trailing characters") {
     // Error when unexpected argument given to valid non-argument command
-    std::string command = "q";
-    std::string arg = "argument";
-    std::vector<Command> commands = get_command(command, arg);
-    std::vector<Command> expected_commands{Command::ERROR_TRAILING_CHARACTERS};
-    REQUIRE(commands == expected_commands);
+    std::vector<Command> commands = get_command("q argument");
+    std::vector<Command> expected{
+        {CommandType::ERROR_TRAILING_CHARACTERS, "q", "argument"}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
 }
 
 TEST_CASE("Command no command given") {
-    std::string command = "";
-    std::string arg = "";
-    std::vector<Command> commands = get_command(command, arg);
+    std::vector<Command> commands = get_command("");
     REQUIRE(commands.empty());
 }
 
 TEST_CASE("Command jump line") {
-    std::string command = "123";
-    std::string arg = "";
-    std::vector<Command> commands = get_command(command, arg);
-    std::vector<Command> expected_commands{Command::JUMP_LINE};
-    REQUIRE(commands == expected_commands);
+    std::vector<Command> commands = get_command("123");
+    std::vector<Command> expected{{CommandType::JUMP_LINE, "123", ""}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
 }
 
 TEST_CASE("Command valid with no argument") {
-    std::string command = "wq";
-    std::string arg = "";
-    std::vector<Command> commands = get_command(command, arg);
-    std::vector<Command> expected_commands{Command::WRITE, Command::QUIT};
-    REQUIRE(commands == expected_commands);
+    std::vector<Command> commands = get_command("wq");
+    std::vector<Command> expected{{CommandType::WRITE, "wq", ""},
+                                  {CommandType::QUIT, "wq", ""}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
 }
 
 TEST_CASE("Command valid with argument") {
-    std::string command = "colorscheme";
-    std::string arg = "default";
-    std::vector<Command> commands = get_command(command, arg);
-    std::vector<Command> expected_commands{Command::SET_COLORSCHEME};
-    REQUIRE(commands == expected_commands);
+    std::vector<Command> commands = get_command("set tabs");
+    std::vector<Command> expected{{CommandType::SET, "set", "tabs"}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
 }

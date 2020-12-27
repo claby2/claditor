@@ -57,8 +57,10 @@ Editor::Editor(const std::string &file_path)
 void Editor::start() {
     Interface::refresh();
     interface_.update();
+    options_.set_options_from_config();
     colorscheme_manager_.fetch_colorschemes();
-    get_runtime_configuration();
+    colorscheme_manager_.set_colorscheme(
+        options_.get_string_option("colorscheme"));
     state_enter(&Editor::normal_state);
 }
 
@@ -79,7 +81,7 @@ void Editor::print_buffer() {
             Interface::move_cursor(i, 0);
         } else {
             std::string line = buffer_.lines[first_line_ + i];
-            if (options_["number"] == 1) {
+            if (options_.get_bool_option("number")) {
                 std::string line_number = std::to_string(first_line_ + i + 1);
                 std::string line_number_content =
                     std::string(line_number_width_ - line_number.length(),
@@ -150,7 +152,7 @@ void Editor::update() {
     }
     current_line_ = first_line_ + cursor_position_.y;
     line_number_width_ =
-        (options_["number"] == 1)
+        (options_.get_bool_option("number") == 1)
             ? static_cast<int>(std::to_string(buffer_.get_size() + 1).length() +
                                1)
             : -1;
@@ -733,13 +735,13 @@ void Editor::insert_enter() {
 }
 
 void Editor::insert_tab() {
-    if (options_["tabs"]) {
+    if (options_.get_bool_option("tabs")) {
         buffer_.insert_char(cursor_position_.x, 1, '\t', current_line_);
         ++cursor_position_.x;
     } else {
-        buffer_.insert_char(cursor_position_.x, options_["tabsize"], ' ',
-                            current_line_);
-        cursor_position_.x += options_["tabsize"];
+        int tabsize = options_.get_int_option("tabsize");
+        buffer_.insert_char(cursor_position_.x, tabsize, ' ', current_line_);
+        cursor_position_.x += tabsize;
     }
 }
 
@@ -819,31 +821,6 @@ void Editor::visual_delete_selection() {
         std::max(0, std::min(buffer_.get_line_length(start.y) - 1, start.x))};
 }
 
-void Editor::get_runtime_configuration() {
-    std::string home_directory = get_home_directory();
-    const std::vector<std::string> RUNTIME_CONFIGURATION_LOCATIONS = {
-        "/.cladrc",
-        "/.config/claditor/.cladrc",
-    };
-    std::ifstream config;
-    for (const std::string &location : RUNTIME_CONFIGURATION_LOCATIONS) {
-        std::string file_path = home_directory + location;
-        config.open(file_path.c_str(), std::ios::in);
-        if (config) {
-            // Config exists
-            Parser parser(FileType::CONFIG, config);
-            std::vector<std::string> command_strings =
-                parser.get_config_content();
-            for (const std::string &command : command_strings) {
-                command_line_ = command;
-                run_command();
-            }
-            clear_command_line();
-            break;
-        }
-    }
-}
-
 void Editor::set_color(ColorForeground foreground, ColorBackground background) {
     if (Interface::has_color_capability() &&
         colorscheme_manager_.has_colorscheme()) {
@@ -879,57 +856,56 @@ void Editor::print_error(const std::string &error) {
 }
 
 void Editor::run_command() {
-    std::string::size_type space_delimiter = command_line_.find(' ');
-    bool has_arg = space_delimiter != std::string::npos;
-    std::string command = command_line_.substr(0, space_delimiter);
-    std::string arg = has_arg ? command_line_.substr(space_delimiter + 1) : "";
-
-    std::vector<Command> commands = get_command(command, arg);
+    std::vector<Command> commands = get_command(command_line_);
 
     for (const Command &c : commands) {
-        switch (c) {
-            case Command::WRITE:
+        switch (c.type) {
+            case CommandType::WRITE:
                 file_.write_content(buffer_.lines);
                 history_.set_content(buffer_.lines);
                 print_message("\"" + file_.get_path() + "\" written");
                 break;
-            case Command::QUIT:
+            case CommandType::QUIT:
                 if (history_.has_unsaved_changes(buffer_.lines)) {
                     print_error("No write since last change");
                 } else {
                     set_mode(ModeType::EXIT);
                 }
                 break;
-            case Command::FORCE_QUIT:
+            case CommandType::FORCE_QUIT:
                 set_mode(ModeType::EXIT);
                 break;
-            case Command::PRINT_COLORSCHEME:
-                if (arg.empty() && colorscheme_manager_.has_colorscheme()) {
+            case CommandType::PRINT_COLORSCHEME:
+                if (c.arg.empty() && !colorscheme_manager_.has_colorscheme()) {
                     print_error("No colorscheme detected");
-                } else if (arg.empty()) {
+                } else if (c.arg.empty()) {
                     print_message(colorscheme_manager_.get_current_name());
                 }
                 break;
-            case Command::SET_COLORSCHEME:
-                if (!colorscheme_manager_.set_colorscheme(arg)) {
-                    print_error("Cannot find colorscheme '" + arg + "'");
+            case CommandType::SET: {
+                std::string initial_colorscheme =
+                    options_.get_string_option("colorscheme");
+                if (!options_.set_option(c.arg)) {
+                    print_error("Unknown option: " + c.arg);
                 }
-                break;
-            case Command::SET:
-                if (!options_.set_option(arg)) {
-                    print_error("Unknown option: " + arg);
+                // Check if colorscheme has changed, set new colorscheme changed
+                std::string new_colorscheme =
+                    options_.get_string_option("colorscheme");
+                if (initial_colorscheme != new_colorscheme &&
+                    !colorscheme_manager_.set_colorscheme(new_colorscheme)) {
+                    print_error("Cannot find colorscheme '" + c.arg + "'");
                 }
-                break;
-            case Command::JUMP_LINE:
-                normal_jump_line(std::stoi(command) - 1);
+            } break;
+            case CommandType::JUMP_LINE:
+                normal_jump_line(std::stoi(c.content) - 1);
                 cursor_position_.x = buffer_.get_first_non_blank(
                     first_line_ + cursor_position_.y);
                 last_column_ = cursor_position_.x;
                 break;
-            case Command::ERROR_INVALID_COMMAND:
+            case CommandType::ERROR_INVALID_COMMAND:
                 print_error("Not an editor command: " + command_line_);
                 break;
-            case Command::ERROR_TRAILING_CHARACTERS:
+            case CommandType::ERROR_TRAILING_CHARACTERS:
                 print_error("Trailing characters");
                 break;
         }

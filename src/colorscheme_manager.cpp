@@ -13,9 +13,9 @@ void ColorschemeManager::fetch_colorschemes() {
     std::string home_directory = get_home_directory();
     std::string colors_directory = home_directory + "/.config/claditor/colors/";
 
-    for (const std::filesystem::directory_entry &file :
+    for (const std::filesystem::directory_entry &entry :
          std::filesystem::directory_iterator(colors_directory)) {
-        std::filesystem::path file_path = file.path();
+        std::filesystem::path file_path = entry.path();
         if (file_path.extension() == ".clad") {
             std::string filename =
                 colors_directory + file_path.filename().string();

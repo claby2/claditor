@@ -4,12 +4,11 @@
 #include <string>
 #include <vector>
 
-enum class Command {
+enum class CommandType {
     WRITE,
     QUIT,
     FORCE_QUIT,
     PRINT_COLORSCHEME,
-    SET_COLORSCHEME,
     SET,
     JUMP_LINE,
 
@@ -18,6 +17,16 @@ enum class Command {
     ERROR_TRAILING_CHARACTERS
 };
 
-std::vector<Command> get_command(const std::string&, const std::string&);
+struct Command {
+    CommandType type;
+    // content should store the string that instantiated the command without the
+    // argument
+    std::string content;
+    std::string arg;
+
+    Command(CommandType, const std::string &, const std::string &);
+};
+
+std::vector<Command> get_command(const std::string &);
 
 #endif

@@ -10,36 +10,45 @@ bool is_valid_number(const std::string &str) {
 }
 
 bool validate_command(
-    const std::unordered_map<std::string, std::vector<Command>> &commands_map,
+    const std::unordered_map<std::string, std::vector<CommandType>>
+        &commands_map,
     const std::string &command) {
     return commands_map.find(command) != commands_map.end();
 }
 
-std::vector<Command> get_command(const std::string &command,
-                                 const std::string &arg) {
+Command::Command(CommandType type, const std::string &content,
+                 const std::string &arg)
+    : type(type), content(content), arg(arg) {}
+
+std::vector<Command> get_command(const std::string &command_line) {
+    // Decompose command_line to command and argument constituents
+    std::string::size_type space_delimiter = command_line.find(' ');
+    std::string command = command_line.substr(0, space_delimiter);
+    std::string arg = space_delimiter != std::string::npos
+                          ? command_line.substr(space_delimiter + 1)
+                          : "";
+
     std::vector<Command> commands_vector;
     if (command.empty()) {
         return commands_vector;
     }
 
-    std::unordered_map<std::string, std::vector<Command>> COMMANDS = {
-        {"q", {Command::QUIT}},
-        {"q!", {Command::FORCE_QUIT}},
-        {"w", {Command::WRITE}},
-        {"wq", {Command::WRITE, Command::QUIT}},
-        {"colo", {Command::PRINT_COLORSCHEME}},
-        {"colorscheme", {Command::PRINT_COLORSCHEME}}};
+    std::unordered_map<std::string, std::vector<CommandType>> COMMANDS = {
+        {"q", {CommandType::QUIT}},
+        {"q!", {CommandType::FORCE_QUIT}},
+        {"w", {CommandType::WRITE}},
+        {"wq", {CommandType::WRITE, CommandType::QUIT}},
+        {"colo", {CommandType::PRINT_COLORSCHEME}},
+        {"colorscheme", {CommandType::PRINT_COLORSCHEME}}};
 
-    std::unordered_map<std::string, std::vector<Command>> ARG_COMMANDS = {
-        {"colo", {Command::SET_COLORSCHEME}},
-        {"colorscheme", {Command::SET_COLORSCHEME}},
-        {"set", {Command::SET}}};
+    std::unordered_map<std::string, std::vector<CommandType>> ARG_COMMANDS = {
+        {"set", {CommandType::SET}}};
 
     bool has_arg = !arg.empty();
 
     // Check for special commands
     if (!has_arg && is_valid_number(command)) {
-        commands_vector.push_back(Command::JUMP_LINE);
+        commands_vector.push_back({CommandType::JUMP_LINE, command, arg});
         return commands_vector;
     }
 
@@ -49,19 +58,25 @@ std::vector<Command> get_command(const std::string &command,
 
     if (!is_valid_arg_command && !is_valid_command) {
         // Command is invalid
-        commands_vector.push_back(Command::ERROR_INVALID_COMMAND);
+        commands_vector.push_back(
+            {CommandType::ERROR_INVALID_COMMAND, command, arg});
         return commands_vector;
     }
     if (has_arg && !is_valid_arg_command && is_valid_command) {
         // Unexpected argument given
-        commands_vector.push_back(Command::ERROR_TRAILING_CHARACTERS);
+        commands_vector.push_back(
+            {CommandType::ERROR_TRAILING_CHARACTERS, command, arg});
         return commands_vector;
     }
 
     if (has_arg) {
-        commands_vector = ARG_COMMANDS[command];
+        for (CommandType &type : ARG_COMMANDS[command]) {
+            commands_vector.push_back({type, command, arg});
+        }
     } else {
-        commands_vector = COMMANDS[command];
+        for (const CommandType &type : COMMANDS[command]) {
+            commands_vector.push_back({type, command, arg});
+        }
     }
     return commands_vector;
 }

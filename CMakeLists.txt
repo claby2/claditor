@@ -47,5 +47,5 @@ endif()
 
 find_package(Curses REQUIRED)
 add_executable(clad src/main.cpp src/interface.cpp)
-target_include_directories(clad PUBLIC ${CURSES_INCLUDE_DIR})
+target_include_directories(clad PUBLIC ${CURSES_INCLUDE_DIR} libs/cxxopts/include)
 target_link_libraries(clad PUBLIC claditor ${CURSES_LIBRARY})

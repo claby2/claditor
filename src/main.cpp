@@ -1,11 +1,14 @@
 #include <ncurses.h>
 
+#include <cxxopts.hpp>
+#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "color.hpp"
 #include "editor.hpp"
+#include "options.hpp"
 
 std::vector<Color> default_colors(COLORS_DEFINED);
 std::vector<std::pair<short, short>> default_pairs(PAIRS_DEFINED);
@@ -57,8 +60,27 @@ void initialize_ncurses() {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc > 1) {
-        std::string file = argv[1];
+    cxxopts::Options options("clad", "Modal text editor");
+
+    options.add_options()("dump-config", "Dumps configuration",
+                          cxxopts::value<bool>()->default_value("false"))(
+        "h,help", "Print usage");
+
+    auto result = options.parse(argc, argv);
+
+    if (result.count("help")) {
+        std::cout << options.help() << '\n';
+        exit(0);
+    }
+
+    std::vector<std::string> unmatched = result.unmatched();
+
+    if (result["dump-config"].as<bool>()) {
+        Options config_options;
+        config_options.set_options_from_config();
+        // TODO: dump options
+    } else if (unmatched.size() > 0) {
+        std::string file = unmatched[0];
         Editor editor(file);
         initialize_ncurses();
         editor.start();

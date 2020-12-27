@@ -105,7 +105,6 @@ class Editor {
     // Visual mode binds
     void visual_delete_selection();
 
-    void get_runtime_configuration();
     void get_colorschemes();
     void set_colorscheme(const std::string&);
     void set_color(ColorForeground, ColorBackground);
