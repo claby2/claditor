@@ -74,6 +74,8 @@ class Editor {
     void normal_center_line(int);
     void normal_delete_line();
     void normal_add_count(int);
+    void normal_page_down();
+    void normal_page_up();
     // Normal mode command states
     bool normal_command_g_state(int);
     bool normal_command_z_state(int);

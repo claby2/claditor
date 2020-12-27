@@ -17,6 +17,9 @@
 #include "position.hpp"
 #include "runtime.hpp"
 
+// Return the equivalent input code when input and ctrl keys are held together
+#define ctrl(input) ((input)&0x1f)
+
 enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 263 };
 
 Editor::Editor(const std::string &file_path)
@@ -247,6 +250,12 @@ void Editor::normal_and_visual(int input) {
         case '9':
             normal_add_count(input);
             state_enter(&Editor::normal_add_count_state);
+            break;
+        case ctrl('f'):
+            normal_page_down();
+            break;
+        case ctrl('b'):
+            normal_page_up();
             break;
         default:
             bind_count_.reset();
@@ -510,6 +519,20 @@ void Editor::normal_delete_line() {
 void Editor::normal_add_count(int input) {
     // Input represents char, convert to integer
     bind_count_.add_digit(input - '0');
+}
+
+void Editor::normal_page_down() {
+    // Bottom line on screen becomes the first line
+    first_line_ =
+        std::min(first_line_ + interface_.lines - 2, buffer_.get_size() - 1);
+    if(first_line_ + cursor_position_.y >= buffer_.get_size()) {
+        normal_end_of_file();
+    }
+}
+
+void Editor::normal_page_up() {
+    // First line on screen bcomes the bottom line
+    first_line_ = std::max(first_line_ - interface_.lines + 2, 0);
 }
 
 bool Editor::normal_command_g_state(int input) {
