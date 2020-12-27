@@ -55,6 +55,7 @@ Editor::Editor(const std::string &file_path)
 
 void Editor::start() {
     Interface::refresh();
+    interface_.update();
     colorscheme_manager_.fetch_colorschemes();
     get_runtime_configuration();
     state_enter(&Editor::normal_state);
@@ -133,7 +134,12 @@ void Editor::clear_command_line() {
 }
 
 void Editor::update() {
+    int initial_interface_lines = interface_.lines;
     interface_.update();
+    // Handle resizing
+    if (initial_interface_lines != interface_.lines) {
+        normal_center_line(current_line_);
+    }
     if (zero_lines_ &&
         (buffer_.get_size() != 1 || buffer_.get_line_length(0) > 0)) {
         zero_lines_ = false;
