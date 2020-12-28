@@ -9,11 +9,14 @@ enum class OptionType { INT, STRING, BOOL };
 class Options {
    public:
     Options();
+
     bool set_option(const std::string &);
     void set_options_from_config();
     int get_int_option(const std::string &);
     std::string get_string_option(const std::string &);
     bool get_bool_option(const std::string &);
+
+    void dump_config();
 
    private:
     std::unordered_map<std::string, int> int_options_;

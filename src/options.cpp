@@ -2,6 +2,7 @@
 
 #include <cctype>
 #include <exception>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -77,6 +78,21 @@ bool Options::get_bool_option(const std::string &option) {
         return bool_options_[option];
     }
     throw OptionError("Invalid bool option requested");
+}
+
+void Options::dump_config() {
+    // Print int options
+    for (const std::pair<std::string, int> p : int_options_) {
+        std::cout << p.first << " " << p.second << '\n';
+    }
+    // Print string options
+    for (const std::pair<std::string, std::string> p : string_options_) {
+        std::cout << p.first << " \"" << p.second << "\"" << '\n';
+    }
+    // Print bool options
+    for (const std::pair<std::string, bool> p : bool_options_) {
+        std::cout << p.first << " " << (p.second ? "true" : "false") << '\n';
+    }
 }
 
 bool Options::is_valid_option(OptionType option_type,

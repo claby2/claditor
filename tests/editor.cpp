@@ -12,7 +12,7 @@ std::string get_result(const std::string &buffer, const std::string &input) {
     std::stringstream file_stream(buffer);
     Editor editor("", file_stream);
     editor.set_interface_inputs(inputs);
-    editor.start();
+    editor.start("");
     return editor.get_buffer_stream().str();
 }
 

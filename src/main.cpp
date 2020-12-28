@@ -62,9 +62,11 @@ void initialize_ncurses() {
 int main(int argc, char* argv[]) {
     cxxopts::Options options("clad", "Modal text editor");
 
-    options.add_options()("dump-config", "Dumps configuration",
-                          cxxopts::value<bool>()->default_value("false"))(
-        "h,help", "Print usage");
+    options.add_options()("h,help", "Print usage")(
+        "c", "Execute command after reading file",
+        cxxopts::value<std::string>())(
+        "dump-config", "Dumps configuration",
+        cxxopts::value<bool>()->default_value("false"));
 
     auto result = options.parse(argc, argv);
 
@@ -78,7 +80,7 @@ int main(int argc, char* argv[]) {
     if (result["dump-config"].as<bool>()) {
         Options config_options;
         config_options.set_options_from_config();
-        // TODO: dump options
+        config_options.dump_config();
     } else if (unmatched.size() > 0) {
         std::string file_path = unmatched[0];
         std::ifstream file;
@@ -87,7 +89,9 @@ int main(int argc, char* argv[]) {
         file_stream << file.rdbuf();
         Editor editor(file_path, file_stream);
         initialize_ncurses();
-        editor.start();
+        std::string initial_command =
+            result.count("c") ? result["c"].as<std::string>() : "";
+        editor.start(initial_command);
         refresh();
         if (has_colors()) {
             // Restore colors

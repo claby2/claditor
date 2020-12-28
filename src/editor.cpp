@@ -64,14 +64,72 @@ Editor::Editor(const std::string &file_path,
     history_.set_content(buffer_.lines);
 }
 
-void Editor::start() {
+void Editor::start(const std::string &initial_command) {
     Interface::refresh();
     interface_.update();
     options_.set_options_from_config();
     colorscheme_manager_.fetch_colorschemes();
     colorscheme_manager_.set_colorscheme(
         options_.get_string_option("colorscheme"));
-    state_enter(&Editor::normal_state);
+    run_command(initial_command);
+    if (mode_.get_type() != ModeType::EXIT) {
+        state_enter(&Editor::normal_state);
+    }
+}
+
+void Editor::run_command(const std::string &command) {
+    std::vector<Command> commands = get_command(command);
+
+    for (const Command &c : commands) {
+        switch (c.type) {
+            case CommandType::WRITE:
+                file_.write_content(buffer_.lines);
+                history_.set_content(buffer_.lines);
+                print_message("\"" + file_.get_path() + "\" written");
+                break;
+            case CommandType::QUIT:
+                if (history_.has_unsaved_changes(buffer_.lines)) {
+                    print_error("No write since last change");
+                } else {
+                    set_mode(ModeType::EXIT);
+                }
+                break;
+            case CommandType::FORCE_QUIT:
+                set_mode(ModeType::EXIT);
+                break;
+            case CommandType::PRINT_COLORSCHEME:
+                if (c.arg.empty() && !colorscheme_manager_.has_colorscheme()) {
+                    print_error("No colorscheme detected");
+                } else if (c.arg.empty()) {
+                    print_message(colorscheme_manager_.get_current_name());
+                }
+                break;
+            case CommandType::SET: {
+                std::string initial_colorscheme =
+                    options_.get_string_option("colorscheme");
+                if (!options_.set_option(c.arg)) {
+                    print_error("Unknown option: " + c.arg);
+                }
+                // Check if colorscheme has changed, set new colorscheme changed
+                std::string new_colorscheme =
+                    options_.get_string_option("colorscheme");
+                if (initial_colorscheme != new_colorscheme &&
+                    !colorscheme_manager_.set_colorscheme(new_colorscheme)) {
+                    print_error("Cannot find colorscheme '" + c.arg + "'");
+                }
+            } break;
+            case CommandType::JUMP_LINE:
+                normal_jump_line(std::stoi(c.content) - 1);
+                normal_first_non_blank_char(first_line_ + cursor_position_.y);
+                break;
+            case CommandType::ERROR_INVALID_COMMAND:
+                print_error("Not an editor command: " + command);
+                break;
+            case CommandType::ERROR_TRAILING_CHARACTERS:
+                print_error("Trailing characters");
+                break;
+        }
+    }
 }
 
 #ifdef UNIT_TEST
@@ -795,7 +853,7 @@ void Editor::command_backspace() {
 
 void Editor::command_enter() {
     set_mode(ModeType::NORMAL);
-    run_command();
+    run_command(command_line_);
     if (mode_.get_type() != ModeType::EXIT) {
         state_enter(&Editor::normal_state);
     }
@@ -886,61 +944,6 @@ void Editor::print_error(const std::string &error) {
     Interface::clear_to_eol();
     adjusted_move(cursor_position_.y, cursor_position_.x);
     unset_color();
-}
-
-void Editor::run_command() {
-    std::vector<Command> commands = get_command(command_line_);
-
-    for (const Command &c : commands) {
-        switch (c.type) {
-            case CommandType::WRITE:
-                file_.write_content(buffer_.lines);
-                history_.set_content(buffer_.lines);
-                print_message("\"" + file_.get_path() + "\" written");
-                break;
-            case CommandType::QUIT:
-                if (history_.has_unsaved_changes(buffer_.lines)) {
-                    print_error("No write since last change");
-                } else {
-                    set_mode(ModeType::EXIT);
-                }
-                break;
-            case CommandType::FORCE_QUIT:
-                set_mode(ModeType::EXIT);
-                break;
-            case CommandType::PRINT_COLORSCHEME:
-                if (c.arg.empty() && !colorscheme_manager_.has_colorscheme()) {
-                    print_error("No colorscheme detected");
-                } else if (c.arg.empty()) {
-                    print_message(colorscheme_manager_.get_current_name());
-                }
-                break;
-            case CommandType::SET: {
-                std::string initial_colorscheme =
-                    options_.get_string_option("colorscheme");
-                if (!options_.set_option(c.arg)) {
-                    print_error("Unknown option: " + c.arg);
-                }
-                // Check if colorscheme has changed, set new colorscheme changed
-                std::string new_colorscheme =
-                    options_.get_string_option("colorscheme");
-                if (initial_colorscheme != new_colorscheme &&
-                    !colorscheme_manager_.set_colorscheme(new_colorscheme)) {
-                    print_error("Cannot find colorscheme '" + c.arg + "'");
-                }
-            } break;
-            case CommandType::JUMP_LINE:
-                normal_jump_line(std::stoi(c.content) - 1);
-                normal_first_non_blank_char(first_line_ + cursor_position_.y);
-                break;
-            case CommandType::ERROR_INVALID_COMMAND:
-                print_error("Not an editor command: " + command_line_);
-                break;
-            case CommandType::ERROR_TRAILING_CHARACTERS:
-                print_error("Trailing characters");
-                break;
-        }
-    }
 }
 
 void Editor::exit_command_mode() {

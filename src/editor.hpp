@@ -20,7 +20,9 @@
 class Editor {
    public:
     explicit Editor(const std::string &, const std::stringstream &);
-    void start();
+    void start(const std::string &);
+
+    void run_command(const std::string &);
 
 #ifdef UNIT_TEST
     void set_interface_inputs(const std::vector<int> &);
@@ -117,7 +119,6 @@ class Editor {
     void unset_color();
     void print_message(const std::string &);
     void print_error(const std::string &);
-    void run_command();
     void exit_command_mode();
     void exit_insert_mode();
     void exit_normal_mode();
