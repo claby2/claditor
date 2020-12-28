@@ -1,5 +1,6 @@
 #include "command.hpp"
 
+#include <algorithm>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -69,14 +70,14 @@ std::vector<Command> get_command(const std::string &command_line) {
         return commands_vector;
     }
 
-    if (has_arg) {
-        for (CommandType &type : ARG_COMMANDS[command]) {
-            commands_vector.push_back({type, command, arg});
-        }
-    } else {
-        for (const CommandType &type : COMMANDS[command]) {
-            commands_vector.push_back({type, command, arg});
-        }
-    }
+    // Determine vector to get command types depending on if argument is present
+    std::vector<CommandType> types =
+        has_arg ? ARG_COMMANDS[command] : COMMANDS[command];
+    std::transform(types.begin(), types.end(),
+                   std::back_inserter(commands_vector),
+                   [command, arg](const CommandType &type) -> Command {
+                       return {type, command, arg};
+                   });
+
     return commands_vector;
 }
