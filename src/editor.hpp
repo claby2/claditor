@@ -2,6 +2,7 @@
 #define CLADITOR_EDITOR_HPP
 
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
@@ -16,8 +17,6 @@
 #include "options.hpp"
 #include "position.hpp"
 
-enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
-
 class Editor {
    public:
     explicit Editor(const std::string &, const std::stringstream &);
@@ -25,6 +24,7 @@ class Editor {
 
 #ifdef UNIT_TEST
     void set_interface_inputs(const std::vector<int> &);
+    std::stringstream get_buffer_stream();
 #endif
 
    private:

@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <iterator>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -23,6 +25,8 @@
 
 // Return the equivalent input code when input and ctrl keys are held together
 #define ctrl(input) ((input)&0x1f)
+
+enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
 
 // Backspace cross-platform compatibility
 #ifndef UNIT_TEST
@@ -73,6 +77,18 @@ void Editor::start() {
 #ifdef UNIT_TEST
 void Editor::set_interface_inputs(const std::vector<int> &inputs) {
     interface_.set_inputs(inputs);
+}
+
+std::stringstream Editor::get_buffer_stream() {
+    std::stringstream buffer_stream;
+    for (size_t i = 0; i < buffer_.get_size(); ++i) {
+        std::string line = buffer_.lines[i];
+        if (i < buffer_.get_size() - 1) {
+            line.push_back('\n');
+        }
+        buffer_stream << line;
+    }
+    return buffer_stream;
 }
 #endif
 
