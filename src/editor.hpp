@@ -16,10 +16,16 @@
 #include "options.hpp"
 #include "position.hpp"
 
+enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
+
 class Editor {
    public:
-    explicit Editor(const std::string&);
+    explicit Editor(const std::string &, const std::stringstream &);
     void start();
+
+#ifdef UNIT_TEST
+    void set_interface_inputs(const std::vector<int> &);
+#endif
 
    private:
     Mode mode_;
@@ -106,11 +112,11 @@ class Editor {
     void visual_delete_selection();
 
     void get_colorschemes();
-    void set_colorscheme(const std::string&);
+    void set_colorscheme(const std::string &);
     void set_color(ColorForeground, ColorBackground);
     void unset_color();
-    void print_message(const std::string&);
-    void print_error(const std::string&);
+    void print_message(const std::string &);
+    void print_error(const std::string &);
     void run_command();
     void exit_command_mode();
     void exit_insert_mode();

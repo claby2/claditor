@@ -24,8 +24,6 @@
 // Return the equivalent input code when input and ctrl keys are held together
 #define ctrl(input) ((input)&0x1f)
 
-enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
-
 // Backspace cross-platform compatibility
 #ifndef UNIT_TEST
 #define ALTERNATIVE_BACKSPACE : \
@@ -37,7 +35,8 @@ enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
 #define IS_BACKSPACE \
     case static_cast<int>(InputKey::BACKSPACE) ALTERNATIVE_BACKSPACE
 
-Editor::Editor(const std::string &file_path)
+Editor::Editor(const std::string &file_path,
+               const std::stringstream &file_stream)
     : mode_(ModeType::NORMAL),
       cursor_position_(0, 0),
       saved_position_(0, 0),
@@ -51,7 +50,7 @@ Editor::Editor(const std::string &file_path)
       buffer_lines_(0),
       current_color_pair_{ColorForeground::DEFAULT, ColorBackground::DEFAULT},
       zero_lines_(false),
-      file_(file_path) {
+      file_(file_path, file_stream) {
     buffer_.lines = file_.get_content();
     if (buffer_.get_size() == 0) {
         // Add empty line to prevent segmentation fault
@@ -70,6 +69,12 @@ void Editor::start() {
         options_.get_string_option("colorscheme"));
     state_enter(&Editor::normal_state);
 }
+
+#ifdef UNIT_TEST
+void Editor::set_interface_inputs(const std::vector<int> &inputs) {
+    interface_.set_inputs(inputs);
+}
+#endif
 
 void Editor::print_buffer() {
     if (first_line_ >= buffer_.get_size()) {
@@ -425,7 +430,7 @@ void Editor::state_enter(bool (Editor::*state_callback)(int)) {
         update();
         print_buffer();
         print_command_line();
-        input = Interface::get_input();
+        input = interface_.get_input();
     } while ((this->*state_callback)(input) &&
              mode_.get_type() != ModeType::EXIT);
 }

@@ -80,8 +80,12 @@ int main(int argc, char* argv[]) {
         config_options.set_options_from_config();
         // TODO: dump options
     } else if (unmatched.size() > 0) {
-        std::string file = unmatched[0];
-        Editor editor(file);
+        std::string file_path = unmatched[0];
+        std::ifstream file;
+        file.open(file_path.c_str(), std::ios::in);
+        std::stringstream file_stream;
+        file_stream << file.rdbuf();
+        Editor editor(file_path, file_stream);
         initialize_ncurses();
         editor.start();
         refresh();

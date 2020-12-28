@@ -5,6 +5,7 @@
 #endif
 
 #include <string>
+#include <vector>
 
 #include "color.hpp"
 
@@ -103,7 +104,12 @@ int Interface::get_current_x() {
 
 int Interface::get_input() {
 #ifdef UNIT_TEST
-    return 1;
+    int result = 0;
+    if (current_input_ < inputs_.size()) {
+        result = inputs_[current_input_];
+        ++current_input_;
+    }
+    return result;
 #else
     return getch();
 #endif
@@ -127,3 +133,10 @@ bool Interface::has_color_capability() {
     return has_colors();
 #endif
 }
+
+#ifdef UNIT_TEST
+void Interface::set_inputs(const std::vector<int> &inputs) {
+    current_input_ = 0;
+    inputs_ = inputs;
+}
+#endif

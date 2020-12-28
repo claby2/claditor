@@ -16,6 +16,7 @@ add_library(
   src/editor.cpp
   src/file.cpp
   src/history.cpp
+  src/interface.cpp
   src/mode.cpp
   src/options.cpp
   src/parser.cpp
@@ -33,12 +34,14 @@ if(ENABLE_TESTING)
       tests/color.cpp
       tests/colorscheme_manager.cpp
       tests/command.cpp
+      tests/editor.cpp
       tests/history.cpp
       tests/mode.cpp
       tests/options.cpp
       tests/parser.cpp
       tests/position.cpp
-      src/interface.cpp)
+      src/interface.cpp
+      src/editor.cpp)
     target_compile_definitions(test PRIVATE UNIT_TEST)
     target_include_directories(test PUBLIC src/)
     target_link_libraries(test PUBLIC claditor Catch2::Catch2)
@@ -46,6 +49,7 @@ if(ENABLE_TESTING)
 endif()
 
 find_package(Curses REQUIRED)
-add_executable(clad src/main.cpp src/interface.cpp)
-target_include_directories(clad PUBLIC ${CURSES_INCLUDE_DIR} libs/cxxopts/include)
+add_executable(clad src/main.cpp)
+target_include_directories(clad PUBLIC ${CURSES_INCLUDE_DIR}
+                                       libs/cxxopts/include)
 target_link_libraries(clad PUBLIC claditor ${CURSES_LIBRARY})
