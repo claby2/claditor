@@ -79,7 +79,7 @@ class Editor {
     void normal_first_line();
     void normal_jump_line(int);
     void normal_center_line(int);
-    void normal_delete_line();
+    void normal_delete_line(int);
     void normal_add_count(int);
     void normal_page_down();
     void normal_page_up();

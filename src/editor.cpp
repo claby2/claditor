@@ -552,17 +552,22 @@ void Editor::normal_center_line(int line) {
     cursor_position_.y = line - first_line_;
 }
 
-void Editor::normal_delete_line() {
-    if (buffer_.get_size() > 1) {
-        buffer_.remove_line(current_line_);
-        cursor_position_.x = buffer_.get_first_non_blank(current_line_);
-        if (current_line_ >= buffer_.get_size()) {
-            --cursor_position_.y;
-        }
-    } else {
+void Editor::normal_delete_line(int number_of_lines) {
+    // Deletes n (number_of_lines) lines below
+    // Does not guarantee n lines will be deleted if there are not enough lines
+    // to be deleted below cursor
+    if (buffer_.get_size() == 1) {
         zero_lines_ = true;
         buffer_.set_line("", 0);
         cursor_position_.x = 0;
+    }
+    for (int i = 0; i < number_of_lines; ++i) {
+        if (buffer_.get_size() > 1 && current_line_ < buffer_.get_size()) {
+            buffer_.remove_line(current_line_);
+            cursor_position_.x = buffer_.get_first_non_blank(current_line_);
+            cursor_position_.y =
+                std::min(buffer_.get_size() - 1, cursor_position_.y);
+        }
     }
 }
 
@@ -616,7 +621,11 @@ bool Editor::normal_command_z_state(int input) {
 bool Editor::normal_command_d_state(int input) {
     switch (input) {
         case 'd':  // Bind: dd
-            normal_delete_line();
+            if (bind_count_.empty()) {
+                normal_delete_line(1);
+            } else {
+                normal_delete_line(bind_count_.get_value());
+            }
             break;
     }
     return false;

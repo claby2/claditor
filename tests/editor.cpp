@@ -205,4 +205,19 @@ TEST_CASE("Editor normal delete line") {
         std::string result = get_result(buffer, input);
         REQUIRE(result == expected);
     }
+    SECTION("Delete multiple lines") {
+        std::string buffer =
+            "line1\n"
+            "line2\n"
+            "line3\n"
+            "line4\n"
+            "line5";
+        std::string input = "2j100dd";
+        std::string expected =
+            "line1\n"
+            "line2";
+
+        std::string result = get_result(buffer, input);
+        REQUIRE(result == expected);
+    }
 }
