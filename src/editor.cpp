@@ -1,6 +1,8 @@
 #include "editor.hpp"
 
+#ifndef UNIT_TEST
 #include <ncurses.h>
+#endif
 
 #include <algorithm>
 #include <array>
@@ -25,10 +27,15 @@
 enum class InputKey : int { TAB = 9, ENTER = 10, ESCAPE = 27, BACKSPACE = 127 };
 
 // Backspace cross-platform compatibility
-#define IS_BACKSPACE                            \
-    case static_cast<int>(InputKey::BACKSPACE): \
-    case KEY_BACKSPACE:                         \
+#ifndef UNIT_TEST
+#define ALTERNATIVE_BACKSPACE : \
+    case KEY_BACKSPACE:         \
     case KEY_DC
+#else
+#define ALTERNATIVE_BACKSPACE
+#endif
+#define IS_BACKSPACE \
+    case static_cast<int>(InputKey::BACKSPACE) ALTERNATIVE_BACKSPACE
 
 Editor::Editor(const std::string &file_path)
     : mode_(ModeType::NORMAL),
