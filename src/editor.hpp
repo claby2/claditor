@@ -63,7 +63,7 @@ class Editor {
 
     // Normal mode binds
     void normal_first_char();
-    void normal_first_non_blank_char();
+    void normal_first_non_blank_char(int);
     void normal_delete();
     void normal_end_of_file();
     void normal_append_after_cursor();

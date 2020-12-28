@@ -233,8 +233,7 @@ void Editor::normal_and_visual(int input) {
             last_column_ = cursor_position_.x;
             break;
         case '^':
-            normal_first_non_blank_char();
-            last_column_ = cursor_position_.x;
+            normal_first_non_blank_char(current_line_);
             break;
         case 'x':
             normal_delete();
@@ -247,9 +246,7 @@ void Editor::normal_and_visual(int input) {
                 normal_end_of_file();
             } else {
                 normal_jump_line(bind_count_.get_value() - 1);
-                cursor_position_.x = buffer_.get_first_non_blank(
-                    first_line_ + cursor_position_.y);
-                last_column_ = cursor_position_.x;
+                normal_first_non_blank_char(first_line_ + cursor_position_.y);
             }
             break;
         case ':':
@@ -428,8 +425,9 @@ void Editor::state_enter(bool (Editor::*state_callback)(int)) {
 
 void Editor::normal_first_char() { cursor_position_.x = 0; }
 
-void Editor::normal_first_non_blank_char() {
-    cursor_position_.x = buffer_.get_first_non_blank(current_line_);
+void Editor::normal_first_non_blank_char(int line) {
+    cursor_position_.x = buffer_.get_first_non_blank(line);
+    last_column_ = cursor_position_.x;
 }
 
 void Editor::normal_delete() {
@@ -555,7 +553,7 @@ void Editor::normal_page_down() {
 }
 
 void Editor::normal_page_up() {
-    // First line on screen bcomes the bottom line
+    // First line on screen becomes the bottom line
     first_line_ = std::max(first_line_ - buffer_lines_ + 1, 0);
 }
 
@@ -567,9 +565,7 @@ bool Editor::normal_command_g_state(int input) {
                 last_column_ = cursor_position_.x;
             } else {
                 normal_jump_line(bind_count_.get_value() - 1);
-                cursor_position_.x = buffer_.get_first_non_blank(
-                    first_line_ + cursor_position_.y);
-                last_column_ = cursor_position_.x;
+                normal_first_non_blank_char(first_line_ + cursor_position_.y);
             }
             break;
     }
@@ -898,9 +894,7 @@ void Editor::run_command() {
             } break;
             case CommandType::JUMP_LINE:
                 normal_jump_line(std::stoi(c.content) - 1);
-                cursor_position_.x = buffer_.get_first_non_blank(
-                    first_line_ + cursor_position_.y);
-                last_column_ = cursor_position_.x;
+                normal_first_non_blank_char(first_line_ + cursor_position_.y);
                 break;
             case CommandType::ERROR_INVALID_COMMAND:
                 print_error("Not an editor command: " + command_line_);
