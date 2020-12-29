@@ -13,18 +13,21 @@ void ColorschemeManager::fetch_colorschemes() {
     std::string home_directory = get_home_directory();
     std::string colors_directory = home_directory + "/.config/claditor/colors/";
 
-    for (const std::filesystem::directory_entry &entry :
-         std::filesystem::directory_iterator(colors_directory)) {
-        std::filesystem::path file_path = entry.path();
-        if (file_path.extension() == ".clad") {
-            std::string filename =
-                colors_directory + file_path.filename().string();
-            std::ifstream file(filename.c_str(), std::ios::in);
-            std::stringstream file_stream;
-            file_stream << file.rdbuf();
-            file.close();
-            Colorscheme colorscheme(file_stream);
-            add_colorscheme(file_path.stem(), colorscheme);
+    if (std::filesystem::is_directory(
+            std::filesystem::status(colors_directory))) {
+        for (const std::filesystem::directory_entry &entry :
+             std::filesystem::directory_iterator(colors_directory)) {
+            std::filesystem::path file_path = entry.path();
+            if (file_path.extension() == ".clad") {
+                std::string filename =
+                    colors_directory + file_path.filename().string();
+                std::ifstream file(filename.c_str(), std::ios::in);
+                std::stringstream file_stream;
+                file_stream << file.rdbuf();
+                file.close();
+                Colorscheme colorscheme(file_stream);
+                add_colorscheme(file_path.stem(), colorscheme);
+            }
         }
     }
 }
