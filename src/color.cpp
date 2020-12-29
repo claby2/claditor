@@ -7,73 +7,44 @@
 const int COLORS_DEFINED = 10;
 const int PAIRS_DEFINED = 18;
 
-bool is_valid_hex(std::string hex) {
+bool is_valid_hex_color(const std::string &hex_color) {
     const int EXPECTED_LENGTH = 7;  // Expected length of the entire string
-    return hex.length() == EXPECTED_LENGTH && hex[0] == '#' &&
-           (hex.substr(1, EXPECTED_LENGTH - 1))
+    return hex_color.length() == EXPECTED_LENGTH && hex_color[0] == '#' &&
+           (hex_color.substr(1, EXPECTED_LENGTH - 1))
                    .find_first_not_of("0123456789ABCDEFabcdef") ==
                std::string::npos;
 }
 
-short get_scaled_value(const std::string &hex, int n) {
+short get_scaled_value(const std::string &hex_color, int n) {
     // Convert RGB values from hex string to zero to 0 - 1000 scale for ncurses
     const int SCALED_MAX_VALUE = 1000;
     const int MAX_VALUE = 255;
     const int BASE = 16;
-    std::string substring = hex.substr((n * 2) + 1, 2);
+    std::string substring = hex_color.substr((n * 2) + 1, 2);
     return static_cast<short>(
         (std::stoi(substring, nullptr, BASE) * SCALED_MAX_VALUE) / MAX_VALUE);
 }
 
-Color get_black() { return {0, 0, 0}; }
-
-Color get_white() { return {1000, 1000, 1000}; }
-
-Color get_color_from_hex(const std::string &hex) {
-    Color color;
-    color.r = get_scaled_value(hex, 0);
-    color.g = get_scaled_value(hex, 1);
-    color.b = get_scaled_value(hex, 2);
-    return color;
-}
-
-Color get_color(const std::string &hex, Color fallback_color) {
-    return is_valid_hex(hex) ? get_color_from_hex(hex) : fallback_color;
-}
-
 Color::Color() : r(0), g(0), b(0) {}
 
-Color::Color(short new_r, short new_g, short new_b)
-    : r(new_r), g(new_g), b(new_b) {}
+Color::Color(short r, short g, short b) : r(r), g(g), b(b) {}
 
-Colorscheme::Colorscheme()
-    : background(get_black()),
-      foreground(get_white()),
-      comment(get_white()),
-      accent(get_white()),
-      color1(get_white()),
-      color2(get_white()),
-      color3(get_white()),
-      color4(get_white()),
-      color5(get_white()),
-      color6(get_white()) {}
+Color Color::black() { return {0, 0, 0}; }
 
-Colorscheme::Colorscheme(const std::stringstream &file_stream) {
-    // Set colorscheme from path
-    Parser parser(FileType::COLOR, file_stream);
-    std::unordered_map<std::string, std::string> color_content =
-        parser.get_color_content();
-    // Set colors of colorscheme
-    background = get_color(color_content["background"], get_black());
-    foreground = get_color(color_content["foreground"], get_white());
-    comment = get_color(color_content["comment"], get_white());
-    accent = get_color(color_content["accent"], get_white());
-    color1 = get_color(color_content["color1"], get_white());
-    color2 = get_color(color_content["color2"], get_white());
-    color3 = get_color(color_content["color3"], get_white());
-    color4 = get_color(color_content["color4"], get_white());
-    color5 = get_color(color_content["color5"], get_white());
-    color6 = get_color(color_content["color6"], get_white());
+Color Color::white() { return {1000, 1000, 1000}; }
+
+bool Color::operator==(const Color &color) const {
+    return r == color.r && g == color.g && b == color.b;
+}
+
+Color get_color(const std::string &hex_color, Color fallback_color) {
+    // Get color object from hex
+    // fallback to fallback_color if given string is not valid hex color
+    if (is_valid_hex_color(hex_color)) {
+        return {get_scaled_value(hex_color, 0), get_scaled_value(hex_color, 1),
+                get_scaled_value(hex_color, 2)};
+    }
+    return fallback_color;
 }
 
 short get_color_pair_index(ColorForeground foreground,

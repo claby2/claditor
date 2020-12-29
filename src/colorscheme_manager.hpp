@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "color.hpp"
+#include "colorscheme.hpp"
 
 class ColorschemeManager {
    public:

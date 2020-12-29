@@ -6,6 +6,10 @@
 extern const int COLORS_DEFINED;
 extern const int PAIRS_DEFINED;
 
+bool is_valid_hex_color(const std::string &);
+
+short get_scaled_value(const std::string &, int);
+
 enum class ColorForeground : short {
     DEFAULT = 1,
     COMMENT = 2,
@@ -24,31 +28,17 @@ struct Color {
     Color();
     Color(short, short, short);
 
+    static Color black();
+    static Color white();
+
+    bool operator==(const Color &) const;
+
     short r;
     short g;
     short b;
 };
 
-struct Colorscheme {
-    Colorscheme();
-    explicit Colorscheme(const std::stringstream &);
-
-    Color background;
-    Color foreground;
-    Color comment;
-    Color accent;
-    Color color1;
-    Color color2;
-    Color color3;
-    Color color4;
-    Color color5;
-    Color color6;
-};
-
-struct ColorPair {
-    ColorForeground foreground;
-    ColorBackground background;
-};
+Color get_color(const std::string &, Color);
 
 short get_color_pair_index(ColorForeground, ColorBackground);
 #endif

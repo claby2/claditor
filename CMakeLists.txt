@@ -11,6 +11,7 @@ add_library(
   src/bind_count.cpp
   src/buffer.cpp
   src/color.cpp
+  src/colorscheme.cpp
   src/colorscheme_manager.cpp
   src/command.cpp
   src/editor.cpp
@@ -32,6 +33,7 @@ if(ENABLE_TESTING)
       tests/bind_count.cpp
       tests/buffer.cpp
       tests/color.cpp
+      tests/colorscheme.cpp
       tests/colorscheme_manager.cpp
       tests/command.cpp
       tests/editor.cpp
