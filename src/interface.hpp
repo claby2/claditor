@@ -31,6 +31,7 @@ class Interface {
 
 #ifdef UNIT_TEST
     void set_inputs(const std::vector<int> &);
+    void set_dimensions(int, int);
 
    private:
     // Mock input for unit test by storing sequential inputs in vector

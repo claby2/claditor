@@ -5,13 +5,31 @@
 #include <string>
 #include <vector>
 
+// Testing the editor:
+
+// - The main goal of unit testing the editor is to test the functionality of
+// the state machine.
+
+// - Each test case targets a state and checks if it functions correctly.
+
+// - Getting to a state in the finite state machine requires a certain
+// sequence of inputs given as a string. This input string is converted to a
+// vector of integers where it will be passed to the editor's interface and
+// returned one by one every state enter call.
+
+// - Number of lines and columns are defined in get_result
+
+// - Escape (27) = \u001b
+
 std::string get_result(const std::string &buffer, const std::string &input) {
+    const int LINES = 5;
+    const int COLUMNS = 5;
     std::string full_input = input + ":wq\n";
     std::vector<int> inputs(full_input.length());
     std::copy(full_input.begin(), full_input.end(), inputs.begin());
     std::stringstream file_stream(buffer);
     Editor editor("", file_stream);
-    editor.set_interface_inputs(inputs);
+    editor.set_interface(inputs, LINES, COLUMNS);
     editor.start("");
     return editor.get_buffer_stream().str();
 }
@@ -220,4 +238,60 @@ TEST_CASE("Editor normal delete line") {
         std::string result = get_result(buffer, input);
         REQUIRE(result == expected);
     }
+}
+
+TEST_CASE("Editor normal add count") {
+    std::string buffer = "hello world foo bar";
+    std::string input = "12lx";
+    std::string expected = "hello world oo bar";
+
+    std::string result = get_result(buffer, input);
+    REQUIRE(result == expected);
+}
+
+TEST_CASE("Editor normal page down") {
+    // When page down, the last line will become the first line
+    // The number of lines in the buffer is the total number of lines subtracted
+    // by the command height
+    std::string buffer =
+        "1\n"
+        "2\n"
+        "3\n"
+        "4\n"
+        "5";
+    std::string input = std::string(1, 'f' & 0x1f) + "x";
+    std::string expected =
+        "1\n"
+        "2\n"
+        "3\n"
+        "\n"
+        "5";
+
+    std::string result = get_result(buffer, input);
+    REQUIRE(result == expected);
+}
+
+TEST_CASE("Editor normal page up") {
+    std::string buffer =
+        "1\n"
+        "2\n"
+        "3\n"
+        "4\n"
+        "5\n"
+        "6\n"
+        "7\n"
+        "8";
+    std::string input = "G" + std::string(1, 'b' & 0x1f) + "x";
+    std::string expected =
+        "1\n"
+        "2\n"
+        "3\n"
+        "4\n"
+        "\n"
+        "6\n"
+        "7\n"
+        "8";
+
+    std::string result = get_result(buffer, input);
+    REQUIRE(result == expected);
 }

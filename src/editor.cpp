@@ -142,8 +142,10 @@ void Editor::run_command(const std::string &command) {
 }
 
 #ifdef UNIT_TEST
-void Editor::set_interface_inputs(const std::vector<int> &inputs) {
+void Editor::set_interface(const std::vector<int> &inputs, int lines,
+                           int columns) {
     interface_.set_inputs(inputs);
+    interface_.set_dimensions(lines, columns);
 }
 
 std::stringstream Editor::get_buffer_stream() {

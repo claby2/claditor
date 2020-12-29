@@ -25,7 +25,7 @@ class Editor {
     void run_command(const std::string &);
 
 #ifdef UNIT_TEST
-    void set_interface_inputs(const std::vector<int> &);
+    void set_interface(const std::vector<int> &, int, int);
     std::stringstream get_buffer_stream();
 #endif
 

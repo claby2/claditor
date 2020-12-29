@@ -12,11 +12,7 @@
 Interface::Interface() : lines(0), columns(0) { update(); }
 
 void Interface::update() {
-#ifdef UNIT_TEST
-    const int MOCK_SIZE = 50;
-    lines = MOCK_SIZE;
-    columns = MOCK_SIZE;
-#else
+#ifndef UNIT_TEST
     lines = LINES;
     columns = COLS;
 #endif
@@ -138,5 +134,10 @@ bool Interface::has_color_capability() {
 void Interface::set_inputs(const std::vector<int> &inputs) {
     current_input_ = 0;
     inputs_ = inputs;
+}
+
+void Interface::set_dimensions(int lines, int columns) {
+    this->lines = lines;
+    this->columns = columns;
 }
 #endif
