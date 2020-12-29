@@ -67,3 +67,33 @@ TEST_CASE("Command valid with argument") {
     bool equal = commands_equal(commands, expected);
     REQUIRE(equal);
 }
+
+TEST_CASE("Command trailing and leading spaces") {
+    std::vector<Command> commands = get_command("    set tabs    ");
+    std::vector<Command> expected{{CommandType::SET, "set", "tabs"}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
+}
+
+TEST_CASE("Command multiple commands") {
+    std::vector<Command> commands =
+        get_command("set tabs | set number | 10 | wq");
+    std::vector<Command> expected{{CommandType::SET, "set", "tabs"},
+                                  {CommandType::SET, "set", "number"},
+                                  {CommandType::JUMP_LINE, "10", ""},
+                                  {CommandType::WRITE, "wq", ""},
+                                  {CommandType::QUIT, "wq", ""}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
+}
+
+TEST_CASE("Command multiple commands with quotes") {
+    // '|' characters should be ignored when in quotes such as when echoing
+    std::vector<Command> commands =
+        get_command("echo \"hello | world\" | echo 'foo | bar'");
+    std::vector<Command> expected{
+        {CommandType::ECHO, "echo", "\"hello | world\""},
+        {CommandType::ECHO, "echo", "'foo | bar'"}};
+    bool equal = commands_equal(commands, expected);
+    REQUIRE(equal);
+}

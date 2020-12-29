@@ -118,6 +118,15 @@ void Editor::run_command(const std::string &command) {
                     print_error("Cannot find colorscheme '" + c.arg + "'");
                 }
             } break;
+            case CommandType::ECHO:
+                if (!c.arg.empty() && c.arg.front() == c.arg.back() &&
+                    (c.arg.front() == '"' || c.arg.front() == '\'')) {
+                    // Print message without quotes
+                    print_message(c.arg.substr(1, c.arg.length() - 2));
+                } else {
+                    print_error("Invalid echo argument " + c.arg);
+                }
+                break;
             case CommandType::JUMP_LINE:
                 normal_jump_line(std::stoi(c.content) - 1);
                 normal_first_non_blank_char(first_line_ + cursor_position_.y);

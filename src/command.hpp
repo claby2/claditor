@@ -10,6 +10,7 @@ enum class CommandType {
     FORCE_QUIT,
     PRINT_COLORSCHEME,
     SET,
+    ECHO,
     JUMP_LINE,
 
     // Error
