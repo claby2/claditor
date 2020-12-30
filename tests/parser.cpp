@@ -39,14 +39,14 @@ TEST_CASE("Parser config file") {
     std::string file_string =
         "// Config test\n"
         "\n"
-        "colorscheme default // Comments should be ignored\n"
-        "colo\n"
+        "set colorscheme=default // Comments should be ignored\n"
+        "colo \t\n"
         "\n"
-        "w\n";
+        "w    \n";
     std::stringstream file_stream(file_string);
     Parser parser(FileType::CONFIG, file_stream);
     std::vector<std::string> expected = {
-        "colorscheme default",
+        "set colorscheme=default",
         "colo",
         "w",
     };
