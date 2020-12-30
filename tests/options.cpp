@@ -18,7 +18,7 @@ TEST_CASE("Options get valid string option") {
     REQUIRE_NOTHROW(options.get_string_option("colorscheme"));
 }
 
-TEST_CASE("Options operator invalid option") {
+TEST_CASE("Options get option with invalid option") {
     Options options;
     CHECK_THROWS(options.get_int_option("invalid_option"));
     CHECK_THROWS(options.get_bool_option("invalid_option"));
