@@ -21,17 +21,24 @@
 
 // - Escape (27) = \u001b
 
-std::string get_result(const std::string &buffer, const std::string &input) {
-    const int LINES = 3;
-    const int COLUMNS = 3;
+std::string get_result_with_dimensions(const std::string &buffer,
+                                       const std::string &input,
+                                       const int lines, const int columns) {
     std::string full_input = input + ":wq\n";
     std::vector<int> inputs(full_input.length());
     std::copy(full_input.begin(), full_input.end(), inputs.begin());
     std::stringstream file_stream(buffer);
     Editor editor("", file_stream);
-    editor.set_interface(inputs, LINES, COLUMNS);
+    editor.set_interface(inputs, lines, columns);
     editor.start("");
     return editor.get_buffer_stream().str();
+}
+
+std::string get_result(const std::string &buffer, const std::string &input) {
+    // Get result with default number of lines and columns
+    const int LINES = 3;
+    const int COLUMNS = 50;
+    return get_result_with_dimensions(buffer, input, LINES, COLUMNS);
 }
 
 TEST_CASE("Editor normal first char") {
@@ -389,6 +396,21 @@ TEST_CASE("Editor move down") {
             "4";
 
         std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("Move down more than buffer size") {
+        // This section aims to ensure that "SIGSEGV - Segmentation violation
+        // signal" is not produced
+        std::string buffer =
+            "1\n"
+            "2";
+        std::string input = "5jx";
+        std::string expected = "1\n";
+        const int lines = 50;
+        const int columns = 50;
+
+        std::string result =
+            get_result_with_dimensions(buffer, input, lines, columns);
         CHECK(result == expected);
     }
 }

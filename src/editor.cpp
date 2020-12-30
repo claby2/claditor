@@ -314,16 +314,16 @@ bool Editor::needs_visual_highlight(int y, int x) {
 void Editor::normal_and_visual(int input) {
     switch (input) {
         case 'h':
-            move_left();
+            can_repeat(&Editor::move_left);
             break;
         case 'j':
-            move_down();
+            can_repeat(&Editor::move_down);
             break;
         case 'k':
-            move_up();
+            can_repeat(&Editor::move_up);
             break;
         case 'l':
-            move_right();
+            can_repeat(&Editor::move_right);
             break;
         case '0':
             normal_first_char();
@@ -525,6 +525,7 @@ void Editor::can_repeat(void (Editor::*func)()) {
     // function should be passed here when called
     int count = bind_count_.get_value();
     for (int i = 0; i < count; ++i) {
+        update();
         (this->*func)();
     }
 }
@@ -741,67 +742,39 @@ void Editor::adjusted_move(int y, int x) const {
 }
 
 void Editor::move_up() {
-    if (bind_count_.empty()) {
-        if (current_line_ - 1 >= 0 && cursor_position_.y - 1 >= 0) {
-            --cursor_position_.y;
-        } else if (current_line_ - 1 >= 0) {
-            --first_line_;
-        }
-        cursor_position_.x = get_adjusted_x();
-    } else {
-        // Move up by [count] lines
-        normal_jump_line(current_line_ - bind_count_.get_value());
-        cursor_position_.x = get_adjusted_x();
+    if (current_line_ - 1 >= 0 && cursor_position_.y - 1 >= 0) {
+        --cursor_position_.y;
+    } else if (current_line_ - 1 >= 0) {
+        --first_line_;
     }
+    cursor_position_.x = get_adjusted_x();
 }
 
 void Editor::move_right() {
-    if (bind_count_.empty()) {
-        // In normal mode, the cursor should not be ahead of the end of the line
-        if (cursor_position_.x + line_number_width_ + 1 <= interface_.columns &&
-            cursor_position_.x < buffer_.get_line_length(current_line_) &&
-            !(mode_.get_type() == ModeType::NORMAL &&
-              cursor_position_.x + 1 >=
-                  buffer_.get_line_length(current_line_))) {
-            ++cursor_position_.x;
-            last_column_ = cursor_position_.x;
-        }
-    } else {
-        // Move right by [count] characters
-        cursor_position_.x =
-            std::min(buffer_.get_line_length(current_line_) - 1,
-                     cursor_position_.x + bind_count_.get_value());
+    // In normal mode, the cursor should not be ahead of the end of the line
+    if (cursor_position_.x + line_number_width_ + 1 <= interface_.columns &&
+        cursor_position_.x < buffer_.get_line_length(current_line_) &&
+        !(mode_.get_type() == ModeType::NORMAL &&
+          cursor_position_.x + 1 >= buffer_.get_line_length(current_line_))) {
+        ++cursor_position_.x;
         last_column_ = cursor_position_.x;
     }
 }
 
 void Editor::move_down() {
-    if (bind_count_.empty()) {
-        if (cursor_position_.y + 1 < buffer_lines_ &&
-            current_line_ + 1 < buffer_.get_size()) {
-            ++cursor_position_.y;
-        } else if (current_line_ + 1 < buffer_.get_size()) {
-            // Scroll down
-            ++first_line_;
-        }
-        cursor_position_.x = get_adjusted_x();
-    } else {
-        // Move down by [count] lines
-        normal_jump_line(current_line_ + bind_count_.get_value());
-        cursor_position_.x = get_adjusted_x();
+    if (cursor_position_.y + 1 < buffer_lines_ &&
+        current_line_ + 1 < buffer_.get_size()) {
+        ++cursor_position_.y;
+    } else if (current_line_ + 1 < buffer_.get_size()) {
+        // Scroll down
+        ++first_line_;
     }
+    cursor_position_.x = get_adjusted_x();
 }
 
 void Editor::move_left() {
-    if (bind_count_.empty()) {
-        if (cursor_position_.x - 1 >= 0) {
-            --cursor_position_.x;
-            last_column_ = cursor_position_.x;
-        }
-    } else {
-        // Move left by [count] characters
-        cursor_position_.x =
-            std::max(0, cursor_position_.x - bind_count_.get_value());
+    if (cursor_position_.x - 1 >= 0) {
+        --cursor_position_.x;
         last_column_ = cursor_position_.x;
     }
 }
