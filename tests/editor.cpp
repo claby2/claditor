@@ -41,7 +41,7 @@ std::string get_result(const std::string &buffer, const std::string &input) {
     return get_result_with_dimensions(buffer, input, LINES, COLUMNS);
 }
 
-TEST_CASE("Editor normal first char") {
+TEST_CASE("Editor normal first char", "[editor]") {
     std::string buffer = "hello world";
     std::string input = "3l0x";
     std::string expected = "ello world";
@@ -50,7 +50,7 @@ TEST_CASE("Editor normal first char") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal first non blank char") {
+TEST_CASE("Editor normal first non blank char", "[editor]") {
     std::string buffer =
         "    hello world\n"
         "foo bar";
@@ -63,7 +63,7 @@ TEST_CASE("Editor normal first non blank char") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal delete") {
+TEST_CASE("Editor normal delete", "[editor]") {
     std::string buffer = "foo";
     std::string input = "2x";
     std::string expected = "o";
@@ -72,7 +72,7 @@ TEST_CASE("Editor normal delete") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal end of file") {
+TEST_CASE("Editor normal end of file", "[editor]") {
     std::string buffer =
         "line1\n"
         "line2\n"
@@ -87,7 +87,7 @@ TEST_CASE("Editor normal end of file") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal append after cursor") {
+TEST_CASE("Editor normal append after cursor", "[editor]") {
     std::string buffer = "foobar";
     std::string input = "3laz\u001b";
     std::string expected = "foobzar";
@@ -96,7 +96,7 @@ TEST_CASE("Editor normal append after cursor") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal append end of line") {
+TEST_CASE("Editor normal append end of line", "[editor]") {
     std::string buffer = "fooba";
     std::string input = "Ar\u001b";
     std::string expected = "foobar";
@@ -105,7 +105,7 @@ TEST_CASE("Editor normal append end of line") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal begin new line below") {
+TEST_CASE("Editor normal begin new line below", "[editor]") {
     SECTION("From middle of file") {
         std::string buffer =
             "line1\n"
@@ -132,7 +132,7 @@ TEST_CASE("Editor normal begin new line below") {
     }
 }
 
-TEST_CASE("Editor normal begin new line above") {
+TEST_CASE("Editor normal begin new line above", "[editor]") {
     SECTION("From middle of file") {
         std::string buffer =
             "line1\n"
@@ -159,7 +159,7 @@ TEST_CASE("Editor normal begin new line above") {
     }
 }
 
-TEST_CASE("Editor normal first line") {
+TEST_CASE("Editor normal first line", "[editor]") {
     std::string buffer =
         "    line1\n"
         "line2\n"
@@ -178,7 +178,7 @@ TEST_CASE("Editor normal first line") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal jump line") {
+TEST_CASE("Editor normal jump line", "[editor]") {
     std::string buffer =
         "line1\n"
         "line2\n"
@@ -195,7 +195,7 @@ TEST_CASE("Editor normal jump line") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal center line") {
+TEST_CASE("Editor normal center line", "[editor]") {
     // If bind count is not empty, zz should act like gg
     // It also centers the screen, however, this behavior cannot be tested
     std::string buffer =
@@ -214,7 +214,7 @@ TEST_CASE("Editor normal center line") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal delete line") {
+TEST_CASE("Editor normal delete line", "[editor]") {
     SECTION("No throw when file has no lines") {
         std::string buffer = "";
         std::string input = "dddd";
@@ -247,7 +247,7 @@ TEST_CASE("Editor normal delete line") {
     }
 }
 
-TEST_CASE("Editor normal add count") {
+TEST_CASE("Editor normal add count", "[editor]") {
     std::string buffer = "hello world foo bar";
     std::string input = "12lx";
     std::string expected = "hello world oo bar";
@@ -256,7 +256,7 @@ TEST_CASE("Editor normal add count") {
     REQUIRE(result == expected);
 }
 
-TEST_CASE("Editor normal page down") {
+TEST_CASE("Editor normal page down", "[editor]") {
     // When page down, the last line will become the first line
     // The number of lines in the buffer is the total number of lines subtracted
     // by the command height
@@ -292,7 +292,7 @@ TEST_CASE("Editor normal page down") {
     }
 }
 
-TEST_CASE("Editor normal page up") {
+TEST_CASE("Editor normal page up", "[editor]") {
     std::string buffer =
         "1\n"
         "2\n"
@@ -322,7 +322,7 @@ TEST_CASE("Editor normal page up") {
     }
 }
 
-TEST_CASE("Editor move up") {
+TEST_CASE("Editor move up", "[editor]") {
     std::string buffer =
         "1\n"
         "2\n"
@@ -352,7 +352,7 @@ TEST_CASE("Editor move up") {
     }
 }
 
-TEST_CASE("Editor move right") {
+TEST_CASE("Editor move right", "[editor]") {
     std::string buffer = "hello world";
     SECTION("Without bind count") {
         std::string input = "lx";
@@ -370,7 +370,7 @@ TEST_CASE("Editor move right") {
     }
 }
 
-TEST_CASE("Editor move down") {
+TEST_CASE("Editor move down", "[editor]") {
     std::string buffer =
         "1\n"
         "2\n"
@@ -415,7 +415,7 @@ TEST_CASE("Editor move down") {
     }
 }
 
-TEST_CASE("Editor move left") {
+TEST_CASE("Editor move left", "[editor]") {
     std::string buffer = "hello world";
     SECTION("Without bind count") {
         std::string input = "10lhx";

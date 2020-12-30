@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-TEST_CASE("History has unsaved changes") {
+TEST_CASE("History has unsaved changes", "[history]") {
     History history;
     std::vector<std::string> original_lines = {"foo", "bar"};
     std::vector<std::string> new_lines = {"hello", "world"};
@@ -13,7 +13,7 @@ TEST_CASE("History has unsaved changes") {
     REQUIRE(unsaved_changes);
 }
 
-TEST_CASE("History has no unsaved changes") {
+TEST_CASE("History has no unsaved changes", "[history]") {
     History history;
     std::vector<std::string> original_lines = {"foo", "bar"};
     std::vector<std::string> new_lines = {"foo", "bar"};

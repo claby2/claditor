@@ -3,35 +3,35 @@
 #include <catch2/catch.hpp>
 #include <string>
 
-TEST_CASE("Buffer initial construction") {
+TEST_CASE("Buffer initial construction", "[buffer]") {
     // Buffer should be empty upon construction
     Buffer buffer;
     int size = buffer.get_size();
     REQUIRE(size == 0);
 }
 
-TEST_CASE("Buffer get line length of empty line") {
+TEST_CASE("Buffer get line length of empty line", "[buffer]") {
     Buffer buffer;
     buffer.lines = {""};
     int length = buffer.get_line_length(0);
     REQUIRE(length == 0);
 }
 
-TEST_CASE("Buffer get line length") {
+TEST_CASE("Buffer get line length", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"foobar"};
     int length = buffer.get_line_length(0);
     REQUIRE(length == 6);
 }
 
-TEST_CASE("Buffer get first non blank in empty line") {
+TEST_CASE("Buffer get first non blank in empty line", "[buffer]") {
     Buffer buffer;
     buffer.lines = {""};
     int index = buffer.get_first_non_blank(0);
     REQUIRE(index == 0);
 }
 
-TEST_CASE("Buffer get first non blank in whitespace line") {
+TEST_CASE("Buffer get first non blank in whitespace line", "[buffer]") {
     Buffer buffer;
     // If line only consists of whitespace characters the first non blank should
     // be equal to the length of the line
@@ -40,14 +40,14 @@ TEST_CASE("Buffer get first non blank in whitespace line") {
     REQUIRE(index == 4);
 }
 
-TEST_CASE("Buffer get first non blank") {
+TEST_CASE("Buffer get first non blank", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"    foo"};  // Four spaces + foo
     int index = buffer.get_first_non_blank(0);
     REQUIRE(index == 4);
 }
 
-TEST_CASE("Buffer set line") {
+TEST_CASE("Buffer set line", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"foo"};
     buffer.set_line("bar", 0);
@@ -55,14 +55,14 @@ TEST_CASE("Buffer set line") {
     REQUIRE(line == "bar");
 }
 
-TEST_CASE("Buffer push back line") {
+TEST_CASE("Buffer push back line", "[buffer]") {
     Buffer buffer;
     buffer.push_back_line("foo");
     std::string line = buffer.lines[0];
     REQUIRE(line == "foo");
 }
 
-TEST_CASE("Buffer insert line") {
+TEST_CASE("Buffer insert line", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"foo", "bar"};
     buffer.insert_line("hello", 1);
@@ -70,7 +70,7 @@ TEST_CASE("Buffer insert line") {
     REQUIRE(line == "hello");
 }
 
-TEST_CASE("Buffer add string to line") {
+TEST_CASE("Buffer add string to line", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"foo"};
     buffer.add_string_to_line("bar", 0);
@@ -78,7 +78,7 @@ TEST_CASE("Buffer add string to line") {
     REQUIRE(line == "foobar");
 }
 
-TEST_CASE("Buffer erase") {
+TEST_CASE("Buffer erase", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"foobar"};
     buffer.erase(3, 3, 0);  // Erase bar
@@ -86,7 +86,7 @@ TEST_CASE("Buffer erase") {
     REQUIRE(line == "foo");
 }
 
-TEST_CASE("Buffer insert character") {
+TEST_CASE("Buffer insert character", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"foobar"};
     // File line 0 with ' ' 4 times from position 3
@@ -95,7 +95,7 @@ TEST_CASE("Buffer insert character") {
     REQUIRE(line == "foo    bar");  // foo + 4 spaces + bar
 }
 
-TEST_CASE("Buffer remove line") {
+TEST_CASE("Buffer remove line", "[buffer]") {
     Buffer buffer;
     buffer.lines = {"foo", "bar"};
     buffer.remove_line(0);

@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-TEST_CASE("Parser color file") {
+TEST_CASE("Parser color file", "[parser]") {
     std::string file_string =
         "// Comments should be ignored\n"
         "// commented = comment\n"
@@ -35,7 +35,7 @@ TEST_CASE("Parser color file") {
     CHECK(commented.empty());
 }
 
-TEST_CASE("Parser config file") {
+TEST_CASE("Parser config file", "[parser]") {
     std::string file_string =
         "// Config test\n"
         "\n"

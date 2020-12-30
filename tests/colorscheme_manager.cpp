@@ -5,7 +5,8 @@
 
 #include "color.hpp"
 
-TEST_CASE("Colorscheme Manager set invalid colorscheme") {
+TEST_CASE("Colorscheme Manager set invalid colorscheme",
+          "[colorscheme_manager]") {
     // Set colorscheme that does not exist
     ColorschemeManager colorscheme_manager;
     bool result = colorscheme_manager.set_colorscheme("invalid_colorscheme");
@@ -14,7 +15,8 @@ TEST_CASE("Colorscheme Manager set invalid colorscheme") {
     CHECK(has_colorscheme == false);
 }
 
-TEST_CASE("Colorscheme manager set valid colorscheme") {
+TEST_CASE("Colorscheme manager set valid colorscheme",
+          "[colorscheme_manager]") {
     std::string expected_colorscheme_name = "colorscheme_name";
     ColorschemeManager colorscheme_manager;
 

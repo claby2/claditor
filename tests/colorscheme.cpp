@@ -15,14 +15,14 @@ bool is_default_colorscheme(const Colorscheme &colorscheme) {
            Color::white() == colorscheme.color6;
 }
 
-TEST_CASE("Colorscheme default colorscheme") {
+TEST_CASE("Colorscheme default colorscheme", "[colorscheme]") {
     Colorscheme colorscheme;
     // Test default color scheme
     bool is_default = is_default_colorscheme(colorscheme);
     REQUIRE(is_default);
 }
 
-TEST_CASE("Colorscheme parse file without valid properties") {
+TEST_CASE("Colorscheme parse file without valid properties", "[colorscheme]") {
     // Read file that doesn't specify any valid color properties
     std::string file_string =
         "// Invalid colorscheme\n"
@@ -41,7 +41,7 @@ TEST_CASE("Colorscheme parse file without valid properties") {
     REQUIRE(is_default);
 }
 
-TEST_CASE("Colorscheme parse file") {
+TEST_CASE("Colorscheme parse file", "[colorscheme]") {
     std::string file_string =
         "// Valid colorscheme\n"
         "\n"

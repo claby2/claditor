@@ -24,7 +24,7 @@ bool commands_equal(const std::vector<Command> &commands1,
     return true;
 }
 
-TEST_CASE("Command error invalid command") {
+TEST_CASE("Command error invalid command", "[command]") {
     std::vector<Command> commands = get_command("invalid_command");
     std::vector<Command> expected{
         {CommandType::ERROR_INVALID_COMMAND, "invalid_command", ""}};
@@ -32,7 +32,7 @@ TEST_CASE("Command error invalid command") {
     REQUIRE(equal);
 }
 
-TEST_CASE("Command error trailing characters") {
+TEST_CASE("Command error trailing characters", "[command]") {
     // Error when unexpected argument given to valid non-argument command
     std::vector<Command> commands = get_command("q argument");
     std::vector<Command> expected{
@@ -41,19 +41,19 @@ TEST_CASE("Command error trailing characters") {
     REQUIRE(equal);
 }
 
-TEST_CASE("Command no command given") {
+TEST_CASE("Command no command given", "[command]") {
     std::vector<Command> commands = get_command("");
     REQUIRE(commands.empty());
 }
 
-TEST_CASE("Command jump line") {
+TEST_CASE("Command jump line", "[command]") {
     std::vector<Command> commands = get_command("123");
     std::vector<Command> expected{{CommandType::JUMP_LINE, "123", ""}};
     bool equal = commands_equal(commands, expected);
     REQUIRE(equal);
 }
 
-TEST_CASE("Command valid with no argument") {
+TEST_CASE("Command valid with no argument", "[command]") {
     std::vector<Command> commands = get_command("wq");
     std::vector<Command> expected{{CommandType::WRITE, "wq", ""},
                                   {CommandType::QUIT, "wq", ""}};
@@ -61,21 +61,21 @@ TEST_CASE("Command valid with no argument") {
     REQUIRE(equal);
 }
 
-TEST_CASE("Command valid with argument") {
+TEST_CASE("Command valid with argument", "[command]") {
     std::vector<Command> commands = get_command("set tabs");
     std::vector<Command> expected{{CommandType::SET, "set", "tabs"}};
     bool equal = commands_equal(commands, expected);
     REQUIRE(equal);
 }
 
-TEST_CASE("Command trailing and leading spaces") {
+TEST_CASE("Command trailing and leading spaces", "[command]") {
     std::vector<Command> commands = get_command("    set tabs    ");
     std::vector<Command> expected{{CommandType::SET, "set", "tabs"}};
     bool equal = commands_equal(commands, expected);
     REQUIRE(equal);
 }
 
-TEST_CASE("Command multiple commands") {
+TEST_CASE("Command multiple commands", "[command]") {
     std::vector<Command> commands =
         get_command("set tabs | set number | 10 | wq");
     std::vector<Command> expected{{CommandType::SET, "set", "tabs"},
@@ -87,7 +87,7 @@ TEST_CASE("Command multiple commands") {
     REQUIRE(equal);
 }
 
-TEST_CASE("Command multiple commands with quotes") {
+TEST_CASE("Command multiple commands with quotes", "[command]") {
     // '|' characters should be ignored when in quotes such as when echoing
     std::vector<Command> commands =
         get_command("echo \"hello | world\" | echo 'foo | bar'");
