@@ -22,8 +22,8 @@
 // - Escape (27) = \u001b
 
 std::string get_result(const std::string &buffer, const std::string &input) {
-    const int LINES = 5;
-    const int COLUMNS = 5;
+    const int LINES = 3;
+    const int COLUMNS = 3;
     std::string full_input = input + ":wq\n";
     std::vector<int> inputs(full_input.length());
     std::copy(full_input.begin(), full_input.end(), inputs.begin());
@@ -58,8 +58,8 @@ TEST_CASE("Editor normal first non blank char") {
 
 TEST_CASE("Editor normal delete") {
     std::string buffer = "foo";
-    std::string input = "x";
-    std::string expected = "oo";
+    std::string input = "2x";
+    std::string expected = "o";
 
     std::string result = get_result(buffer, input);
     REQUIRE(result == expected);
@@ -259,16 +259,30 @@ TEST_CASE("Editor normal page down") {
         "3\n"
         "4\n"
         "5";
-    std::string input = std::string(1, 'f' & 0x1f) + "x";
-    std::string expected =
-        "1\n"
-        "2\n"
-        "3\n"
-        "\n"
-        "5";
+    SECTION("Without bind count") {
+        std::string input = std::string(1, 'f' & 0x1f) + "x";
+        std::string expected =
+            "1\n"
+            "\n"
+            "3\n"
+            "4\n"
+            "5";
 
-    std::string result = get_result(buffer, input);
-    REQUIRE(result == expected);
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("With bind count") {
+        std::string input = "2" + std::string(1, 'f' & 0x1f) + "x";
+        std::string expected =
+            "1\n"
+            "2\n"
+            "\n"
+            "4\n"
+            "5";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
 }
 
 TEST_CASE("Editor normal page up") {
@@ -276,22 +290,123 @@ TEST_CASE("Editor normal page up") {
         "1\n"
         "2\n"
         "3\n"
-        "4\n"
-        "5\n"
-        "6\n"
-        "7\n"
-        "8";
-    std::string input = "G" + std::string(1, 'b' & 0x1f) + "x";
-    std::string expected =
+        "4";
+    SECTION("Without bind count") {
+        std::string input = "G" + std::string(1, 'b' & 0x1f) + "x";
+        std::string expected =
+            "1\n"
+            "2\n"
+            "\n"
+            "4";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("With bind count") {
+        std::string input = "G2" + std::string(1, 'b' & 0x1f) + "x";
+        std::string expected =
+            "1\n"
+            "\n"
+            "3\n"
+            "4";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor move up") {
+    std::string buffer =
         "1\n"
         "2\n"
         "3\n"
-        "4\n"
-        "\n"
-        "6\n"
-        "7\n"
-        "8";
+        "4";
+    SECTION("Without bind count") {
+        std::string input = "Gkx";
+        std::string expected =
+            "1\n"
+            "2\n"
+            "\n"
+            "4";
 
-    std::string result = get_result(buffer, input);
-    REQUIRE(result == expected);
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("With bind count") {
+        std::string input = "G2kx";
+        std::string expected =
+            "1\n"
+            "\n"
+            "3\n"
+            "4";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor move right") {
+    std::string buffer = "hello world";
+    SECTION("Without bind count") {
+        std::string input = "lx";
+        std::string expected = "hllo world";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("With bind count") {
+        std::string input = "5lx";
+        std::string expected = "helloworld";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor move down") {
+    std::string buffer =
+        "1\n"
+        "2\n"
+        "3\n"
+        "4";
+    SECTION("Without bind count") {
+        std::string input = "jx";
+        std::string expected =
+            "1\n"
+            "\n"
+            "3\n"
+            "4";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("With bind count") {
+        std::string input = "2jx";
+        std::string expected =
+            "1\n"
+            "2\n"
+            "\n"
+            "4";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor move left") {
+    std::string buffer = "hello world";
+    SECTION("Without bind count") {
+        std::string input = "10lhx";
+        std::string expected = "hello word";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("With bind count") {
+        std::string input = "10l5hx";
+        std::string expected = "helloworld";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
 }

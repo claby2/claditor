@@ -333,7 +333,7 @@ void Editor::normal_and_visual(int input) {
             normal_first_non_blank_char(current_line_);
             break;
         case 'x':
-            normal_delete();
+            can_repeat(&Editor::normal_delete);
             break;
         case 'g':
             state_enter(&Editor::normal_command_g_state);
@@ -366,10 +366,10 @@ void Editor::normal_and_visual(int input) {
             state_enter(&Editor::normal_add_count_state);
             break;
         case ctrl('f'):
-            normal_page_down();
+            can_repeat(&Editor::normal_page_down);
             break;
         case ctrl('b'):
-            normal_page_up();
+            can_repeat(&Editor::normal_page_up);
             break;
         default:
             bind_count_.reset();
@@ -518,6 +518,15 @@ void Editor::state_enter(bool (Editor::*state_callback)(int)) {
         input = interface_.get_input();
     } while ((this->*state_callback)(input) &&
              mode_.get_type() != ModeType::EXIT);
+}
+
+void Editor::can_repeat(void (Editor::*func)()) {
+    // If a function should repeat by the number stored by bind count, the
+    // function should be passed here when called
+    int count = bind_count_.get_value();
+    for (int i = 0; i < count; ++i) {
+        (this->*func)();
+    }
 }
 
 void Editor::normal_first_char() { cursor_position_.x = 0; }
@@ -690,11 +699,7 @@ bool Editor::normal_command_z_state(int input) {
 bool Editor::normal_command_d_state(int input) {
     switch (input) {
         case 'd':  // Bind: dd
-            if (bind_count_.empty()) {
-                normal_delete_line(1);
-            } else {
-                normal_delete_line(bind_count_.get_value());
-            }
+            normal_delete_line(bind_count_.get_value());
             break;
     }
     return false;

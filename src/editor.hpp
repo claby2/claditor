@@ -69,6 +69,8 @@ class Editor {
     bool command_state(int);
     void state_enter(bool (Editor::*)(int));
 
+    void can_repeat(void (Editor::*)());
+
     // Normal mode binds
     void normal_first_char();
     void normal_first_non_blank_char(int);
