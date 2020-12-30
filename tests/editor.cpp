@@ -401,7 +401,7 @@ TEST_CASE("Editor move down", "[editor]") {
     SECTION("Move down more than buffer size") {
         // This section aims to ensure that "SIGSEGV - Segmentation violation
         // signal" is not produced
-        std::string buffer =
+        std::string short_buffer =
             "1\n"
             "2";
         std::string input = "5jx";
@@ -410,7 +410,7 @@ TEST_CASE("Editor move down", "[editor]") {
         const int columns = 50;
 
         std::string result =
-            get_result_with_dimensions(buffer, input, lines, columns);
+            get_result_with_dimensions(short_buffer, input, lines, columns);
         CHECK(result == expected);
     }
 }

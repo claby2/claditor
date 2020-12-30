@@ -28,6 +28,7 @@ int Interface::refresh() {
 
 int Interface::cursor_set(int visibility) {
 #ifdef UNIT_TEST
+    (void)(visibility);
     return 1;
 #else
     return curs_set(visibility);
@@ -36,6 +37,8 @@ int Interface::cursor_set(int visibility) {
 
 int Interface::move_cursor(int y, int x) {
 #ifdef UNIT_TEST
+    (void)(y);
+    (void)(x);
     return 1;
 #else
     return move(y, x);
@@ -44,6 +47,9 @@ int Interface::move_cursor(int y, int x) {
 
 int Interface::mv_print(int y, int x, const std::string &str) {
 #ifdef UNIT_TEST
+    (void)(y);
+    (void)(x);
+    (void)(str);
     return 1;
 #else
     return mvprintw(y, x, "%s", str.c_str());
@@ -52,6 +58,9 @@ int Interface::mv_print(int y, int x, const std::string &str) {
 
 int Interface::mv_print_ch(int y, int x, char c) {
 #ifdef UNIT_TEST
+    (void)(y);
+    (void)(x);
+    (void)(c);
     return 1;
 #else
     return mvaddch(y, x, c);
@@ -68,6 +77,7 @@ int Interface::clear_to_eol() {
 
 int Interface::attribute_on(short color_pair) {
 #ifdef UNIT_TEST
+    (void)(color_pair);
     return 1;
 #else
     return attron(COLOR_PAIR(color_pair));
@@ -76,6 +86,7 @@ int Interface::attribute_on(short color_pair) {
 
 int Interface::attribute_off(short color_pair) {
 #ifdef UNIT_TEST
+    (void)(color_pair);
     return 1;
 #else
     return attroff(COLOR_PAIR(color_pair));
@@ -101,7 +112,8 @@ int Interface::get_current_x() {
 int Interface::get_input() {
 #ifdef UNIT_TEST
     int result = 0;
-    if (current_input_ < inputs_.size()) {
+    if (static_cast<std::vector<int>::size_type>(current_input_) <
+        inputs_.size()) {
         result = inputs_[current_input_];
         ++current_input_;
     }
@@ -114,6 +126,7 @@ int Interface::get_input() {
 int Interface::initialize_color(short &color_number, Color color) {
     int result = 0;
 #ifdef UNIT_TEST
+    (void)(color);
     result = 1;
 #else
     result = init_color(color_number, color.r, color.g, color.b);

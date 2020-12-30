@@ -30,7 +30,7 @@ void initialize_ncurses() {
     if (has_colors()) {
         start_color();
         // Backup and initialize colors
-        for (size_t i = 0; i < COLORS_DEFINED; ++i) {
+        for (int i = 0; i < COLORS_DEFINED; ++i) {
             short index = i;
             Color color;
             color_content(index, &color.r, &color.g, &color.b);
@@ -95,13 +95,13 @@ int main(int argc, char* argv[]) {
         refresh();
         if (has_colors()) {
             // Restore colors
-            for (size_t i = 0; i < COLORS_DEFINED; ++i) {
+            for (int i = 0; i < COLORS_DEFINED; ++i) {
                 init_color(static_cast<short>(i), default_colors[i].r,
                            default_colors[i].g, default_colors[i].b);
             }
 
             // Restore color pairs
-            for (short i = 1; i < PAIRS_DEFINED + 1; ++i) {
+            for (int i = 1; i < PAIRS_DEFINED + 1; ++i) {
                 std::pair<short, short> color_pair = default_pairs[i - 1];
                 init_pair(static_cast<short>(i), color_pair.first,
                           color_pair.second);

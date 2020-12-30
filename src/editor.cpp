@@ -150,7 +150,7 @@ void Editor::set_interface(const std::vector<int> &inputs, int lines,
 
 std::stringstream Editor::get_buffer_stream() {
     std::stringstream buffer_stream;
-    for (size_t i = 0; i < buffer_.get_size(); ++i) {
+    for (int i = 0; i < buffer_.get_size(); ++i) {
         std::string line = buffer_.lines[i];
         if (i < buffer_.get_size() - 1) {
             line.push_back('\n');

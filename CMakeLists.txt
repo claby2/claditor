@@ -5,6 +5,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(ENABLE_TESTING "Enable Test Builds" ON)
+option(ENABLE_WARNINGS "Add Warnings" ON)
+
+if(ENABLE_WARNINGS)
+  if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
+  else()
+    set(CMAKE_CXX_FLAGS
+        "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror=return-type")
+  endif()
+endif()
 
 add_library(
   claditor
