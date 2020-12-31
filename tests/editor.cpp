@@ -432,3 +432,149 @@ TEST_CASE("Editor move left", "[editor]") {
         CHECK(result == expected);
     }
 }
+
+TEST_CASE("Editor insert backspace", "[editor]") {
+    SECTION("Move line above") {
+        std::string buffer =
+            "hello\n"
+            "world";
+        std::string input = "ji\u007f\u001b";
+        std::string expected = "helloworld";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("Delete single character") {
+        std::string buffer = "foo";
+        std::string input = "li\u007f\u001b";
+        std::string expected = "oo";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor insert enter", "[editor]") {
+    SECTION("Move substring down") {
+        std::string buffer = "hello";
+        std::string input = "li\u000a\u001b";
+        std::string expected =
+            "h\n"
+            "ello";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("Insert new line") {
+        std::string buffer = "";
+        std::string input = "ihello\u000a\u001b";
+        std::string expected = "hello\n";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor insert tab", "[editor]") {
+    std::string buffer = "hello";
+    SECTION("Tabs") {
+        std::string input = ":set tabs\u000ai\u0009\u001b";
+        std::string expected = "\thello";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("Spaces") {
+        std::string input = ":set notabs | set tabsize=4\u000ai\u0009\u001b";
+        std::string expected = "    hello";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor insert char", "[editor]") {
+    std::string buffer = "bar";
+    std::string input = "ifoo \u001b";
+    std::string expected = "foo bar";
+
+    std::string result = get_result(buffer, input);
+    CHECK(result == expected);
+}
+
+TEST_CASE("Editor command backspace", "[editor]") {
+    SECTION("Empty command line") {
+        std::string buffer = "";
+        std::string input = ":\u007fifoo\u001b";
+        std::string expected = "foo";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("Filled command line") {
+        std::string buffer =
+            "1\n"
+            "2\n"
+            "3";
+        std::string input = ":3\u007f2\u000ax";
+        std::string expected =
+            "1\n"
+            "\n"
+            "3";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}
+
+TEST_CASE("Editor command enter", "[editor]") {
+    std::string buffer =
+        "1\n"
+        "2\n"
+        "3";
+    std::string input = ":2\u000ax";
+    std::string expected =
+        "1\n"
+        "\n"
+        "3";
+
+    std::string result = get_result(buffer, input);
+    CHECK(result == expected);
+}
+
+TEST_CASE("Editor command char", "[editor]") {
+    std::string buffer = "";
+    std::string input = ":echo \"ifoo\"\u000a";
+    std::string expected = "";
+
+    std::string result = get_result(buffer, input);
+    CHECK(result == expected);
+}
+
+TEST_CASE("Editor visual delete selection", "[editor]") {
+    std::string buffer =
+        "line_one\n"
+        "line_two\n"
+        "    line_three\n"
+        "\n"
+        "line_five";
+    SECTION("Visual mode") {
+        std::string input = "2lv2j3ld";
+        std::string expected =
+            "line_three\n"
+            "\n"
+            "line_five";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+    SECTION("Visual line mode") {
+        std::string input = "V2jd";
+        std::string expected =
+            "\n"
+            "line_five";
+
+        std::string result = get_result(buffer, input);
+        CHECK(result == expected);
+    }
+}

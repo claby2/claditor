@@ -793,8 +793,7 @@ void Editor::insert_backspace() {
 }
 
 void Editor::insert_enter() {
-    if (static_cast<std::string::size_type>(cursor_position_.x) <
-        buffer_.lines[current_line_].length()) {
+    if (cursor_position_.x < buffer_.get_line_length(current_line_)) {
         // Move substring down
         int substring_length =
             buffer_.get_line_length(current_line_) - cursor_position_.x;
@@ -866,29 +865,19 @@ void Editor::visual_delete_selection() {
     if (start.y == end.y) {
         buffer_.erase(start.x, end.x - start.x + 1, start.y);
     } else {
-        // Erase selected content
         buffer_.erase(start.x, buffer_.get_line_length(start.y), start.y);
+        buffer_.erase(0, end.x + 1, end.y);
         for (int i = start.y + 1; i < end.y; ++i) {
             buffer_.set_line("", i);
         }
-        buffer_.erase(0, end.x + 1, end.y);
-
-        // Concatenate end line and start line
-        if (buffer_.get_line_length(end.y) == 0) {
-            // If end line is currently empty, concatenate with the line after
-            // Ensure that it doesn't exceed maximum lines
-            end.y = std::min(buffer_.get_size() - 1, end.y + 1);
-        }
-        buffer_.add_string_to_line(buffer_.lines[end.y], start.y);
+        buffer_.set_line(buffer_.lines[start.y] + buffer_.lines[end.y],
+                         start.y);
         buffer_.set_line("", end.y);
-
-        // Remove empty lines
         for (int i = end.y; i >= start.y; --i) {
             if (buffer_.get_line_length(i) == 0) {
                 buffer_.remove_line(i);
             }
         }
-
         // Check if entire buffer was deleted
         if (buffer_.get_size() == 0) {
             zero_lines_ = true;
