@@ -834,7 +834,7 @@ void Editor::insert_char(int input) {
 void Editor::command_backspace() {
     if (command_line_.empty()) {
         set_mode(ModeType::NORMAL);
-        state_enter(&Editor::insert_state);
+        state_enter(&Editor::normal_state);
     } else {
         command_line_.pop_back();
     }
