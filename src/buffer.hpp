@@ -4,8 +4,11 @@
 #include <string>
 #include <vector>
 
+#include "position.hpp"
+
 class Buffer {
    public:
+    Position position;
     std::vector<std::string> lines;
 
     Buffer();

@@ -52,6 +52,7 @@ Editor::Editor(const std::string &file_path,
       visual_line_(0),
       line_number_width_(0),
       buffer_lines_(0),
+      horizontal_offset_(0),
       current_color_pair_{ColorForeground::DEFAULT, ColorBackground::DEFAULT},
       zero_lines_(false),
       file_(file_path, file_stream) {
@@ -67,6 +68,7 @@ Editor::Editor(const std::string &file_path,
 void Editor::start(const std::string &initial_command) {
     Interface::refresh();
     interface_.update();
+    update();
     options_.set_options_from_config();
     colorscheme_manager_.fetch_colorschemes();
     colorscheme_manager_.set_colorscheme(
@@ -129,7 +131,7 @@ void Editor::run_command(const std::string &command) {
                 break;
             case CommandType::JUMP_LINE:
                 normal_jump_line(std::stoi(c.content) - 1);
-                normal_first_non_blank_char(first_line_ + cursor_position_.y);
+                normal_first_non_blank_char(first_line_ + buffer_.position.y);
                 break;
             case CommandType::ERROR_INVALID_COMMAND:
                 print_error("Not an editor command: " + command);
@@ -165,7 +167,7 @@ void Editor::print_buffer() {
     if (first_line_ >= buffer_.get_size()) {
         // Adjusted first line
         first_line_ = buffer_.get_size() - 1;
-        cursor_position_.y = 0;
+        buffer_.position.y = 0;
     }
     bool has_scroll = previous_first_line_ != first_line_;
     if (has_scroll) {
@@ -187,8 +189,13 @@ void Editor::print_buffer() {
                 // Print line number
                 Interface::mv_print(i, 0, line_number_content + ' ');
             }
+            // The number of characters to render should not exceed the number
+            // of columns that can be used to render the buffer
+            int characters_to_render =
+                std::min(static_cast<int>(line.length()) - horizontal_offset_,
+                         interface_.columns - line_number_width_ - 1);
             // Print characters one by one
-            for (size_t j = 0; j < line.length(); ++j) {
+            for (int j = 0; j < characters_to_render; ++j) {
                 bool accent = needs_visual_highlight(i, j) || line[j] == '\t';
                 if (accent) {
                     unset_color();
@@ -196,7 +203,8 @@ void Editor::print_buffer() {
                               ColorBackground::ACCENT);
                 }
                 Interface::mv_print_ch(
-                    i, static_cast<int>(line_number_width_ + 1 + j), line[j]);
+                    i, static_cast<int>(line_number_width_ + 1 + j),
+                    line[j + horizontal_offset_]);
                 if (accent) {
                     unset_color();
                     set_color(default_color_pair.foreground,
@@ -210,7 +218,7 @@ void Editor::print_buffer() {
         }
     }
     unset_color();
-    adjusted_move(cursor_position_.y, cursor_position_.x);
+    Interface::move_cursor(cursor_position_.y, cursor_position_.x);
     if (has_scroll) {
         Interface::cursor_set(1);
     }
@@ -230,10 +238,24 @@ void Editor::clear_command_line() {
     command_line_ = "";
     Interface::move_cursor(buffer_lines_, 0);
     Interface::clear_to_eol();
-    adjusted_move(cursor_position_.y, cursor_position_.x);
+    Interface::move_cursor(cursor_position_.y, cursor_position_.x);
 }
 
 void Editor::update() {
+    cursor_position_ = {buffer_.position.y,
+                        buffer_.position.x + line_number_width_ + 1};
+    int new_horizontal_offset = 0;
+    if (cursor_position_.x > interface_.columns - 1) {
+        new_horizontal_offset = cursor_position_.x - (interface_.columns - 1);
+    }
+    cursor_position_.x = std::min(cursor_position_.x, interface_.columns - 1);
+    if (cursor_position_.x == interface_.columns - 1 &&
+        new_horizontal_offset > horizontal_offset_) {
+        horizontal_offset_ = new_horizontal_offset;
+    } else {
+        horizontal_offset_ = std::min(horizontal_offset_, buffer_.position.x);
+        cursor_position_.x -= (horizontal_offset_ - new_horizontal_offset);
+    }
     // Number of screen lines used for command-line
     const int COMMAND_HEIGHT = 1;
     int initial_interface_lines = interface_.lines;
@@ -260,10 +282,10 @@ Position Editor::get_visual_start_position() {
     // Return position of the start of visual selection
     Position start = visual_position_;
     if (current_line_ == visual_line_) {
-        start = {cursor_position_.y,
-                 std::min(cursor_position_.x, visual_position_.x)};
+        start = {buffer_.position.y,
+                 std::min(buffer_.position.x, visual_position_.x)};
     } else if (current_line_ < visual_line_) {
-        start = cursor_position_;
+        start = buffer_.position;
     } else {
         start.y = visual_line_ - first_line_;
     }
@@ -275,10 +297,10 @@ Position Editor::get_visual_start_position() {
 
 Position Editor::get_visual_end_position() {
     // Return position of the end of visual selection
-    Position end = cursor_position_;
+    Position end = buffer_.position;
     if (current_line_ == visual_line_) {
-        end = {cursor_position_.y,
-               std::max(cursor_position_.x, visual_position_.x)};
+        end = {buffer_.position.y,
+               std::max(buffer_.position.x, visual_position_.x)};
     } else if (current_line_ < visual_line_) {
         end = {visual_line_ - first_line_, visual_position_.x};
     }
@@ -291,7 +313,7 @@ Position Editor::get_visual_end_position() {
 bool Editor::needs_visual_highlight(int y, int x) {
     if ((mode_.get_type() != ModeType::VISUAL &&
          mode_.get_type() != ModeType::VISUAL_LINE) ||
-        (y == cursor_position_.y && x == cursor_position_.x)) {
+        (y == buffer_.position.y && x == buffer_.position.x)) {
         return false;
     }
     Position start = get_visual_start_position();
@@ -327,7 +349,7 @@ void Editor::normal_and_visual(int input) {
             break;
         case '0':
             normal_first_char();
-            last_column_ = cursor_position_.x;
+            last_column_ = buffer_.position.x;
             break;
         case '^':
             normal_first_non_blank_char(current_line_);
@@ -343,7 +365,7 @@ void Editor::normal_and_visual(int input) {
                 normal_end_of_file();
             } else {
                 normal_jump_line(bind_count_.get_value() - 1);
-                normal_first_non_blank_char(first_line_ + cursor_position_.y);
+                normal_first_non_blank_char(first_line_ + buffer_.position.y);
             }
             break;
         case ':':
@@ -530,20 +552,20 @@ void Editor::can_repeat(void (Editor::*func)()) {
     }
 }
 
-void Editor::normal_first_char() { cursor_position_.x = 0; }
+void Editor::normal_first_char() { buffer_.position.x = 0; }
 
 void Editor::normal_first_non_blank_char(int line) {
-    cursor_position_.x = buffer_.get_first_non_blank(line);
-    last_column_ = cursor_position_.x;
+    buffer_.position.x = buffer_.get_first_non_blank(line);
+    last_column_ = buffer_.position.x;
 }
 
 void Editor::normal_delete() {
     if (buffer_.get_line_length(current_line_) > 0) {
-        buffer_.erase(cursor_position_.x, 1, current_line_);
+        buffer_.erase(buffer_.position.x, 1, current_line_);
         int current_line_length = buffer_.get_line_length(current_line_);
-        if (cursor_position_.x >= current_line_length &&
+        if (buffer_.position.x >= current_line_length &&
             current_line_length > 0) {
-            cursor_position_.x = current_line_length - 1;
+            buffer_.position.x = current_line_length - 1;
         }
     }
 }
@@ -552,34 +574,34 @@ void Editor::normal_end_of_file() {
     int last_line = buffer_.get_size() - 1;
     if (buffer_.get_size() > buffer_lines_) {
         first_line_ = last_line - buffer_lines_ + 1;
-        cursor_position_.y = buffer_lines_ - 1;
+        buffer_.position.y = buffer_lines_ - 1;
     } else {
         first_line_ = 0;
-        cursor_position_.y = last_line;
+        buffer_.position.y = last_line;
     }
-    cursor_position_.x = buffer_.get_first_non_blank(last_line);
-    last_column_ = cursor_position_.x;
+    buffer_.position.x = buffer_.get_first_non_blank(last_line);
+    last_column_ = buffer_.position.x;
 }
 
 void Editor::normal_append_after_cursor() {
-    ++cursor_position_.x;
+    ++buffer_.position.x;
     set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_append_end_of_line() {
-    cursor_position_.x = buffer_.get_line_length(current_line_);
+    buffer_.position.x = buffer_.get_line_length(current_line_);
     set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_begin_new_line_below() {
     buffer_.insert_line("", current_line_ + 1);
-    cursor_position_.x = 0;
-    if (cursor_position_.y >= buffer_lines_ - 1) {
+    buffer_.position.x = 0;
+    if (buffer_.position.y >= buffer_lines_ - 1) {
         ++first_line_;
     } else {
-        ++cursor_position_.y;
+        ++buffer_.position.y;
     }
     set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
@@ -587,15 +609,15 @@ void Editor::normal_begin_new_line_below() {
 
 void Editor::normal_begin_new_line_above() {
     buffer_.insert_line("", current_line_);
-    cursor_position_.x = 0;
+    buffer_.position.x = 0;
     set_mode(ModeType::INSERT);
     state_enter(&Editor::insert_state);
 }
 
 void Editor::normal_first_line() {
     first_line_ = 0;
-    cursor_position_.x = buffer_.get_first_non_blank(0);
-    cursor_position_.y = 0;
+    buffer_.position.x = buffer_.get_first_non_blank(0);
+    buffer_.position.y = 0;
 }
 
 void Editor::normal_jump_line(int line) {
@@ -604,22 +626,22 @@ void Editor::normal_jump_line(int line) {
     if (line >= first_line_ && line < first_line_ + buffer_lines_) {
         // Target line is already visible
         // There is no need to change first_line_
-        cursor_position_.y = line - first_line_;
+        buffer_.position.y = line - first_line_;
     } else if (std::abs(line -
                         (first_line_ + std::floor(interface_.lines / 2))) >
                interface_.lines) {
-        // Make cursor_position_.y middle point of screen
+        // Make buffer_.position.y middle point of screen
         first_line_ = std::max(
             0, std::min(
                    buffer_.get_size() - buffer_lines_,
                    static_cast<int>(line - std::floor(interface_.lines / 2))));
-        cursor_position_.y = line - first_line_;
+        buffer_.position.y = line - first_line_;
     } else if (line < current_line_) {
         first_line_ = line;
-        cursor_position_.y = 0;
+        buffer_.position.y = 0;
     } else {
         first_line_ = line - buffer_lines_ + 1;
-        cursor_position_.y = buffer_lines_ - 1;
+        buffer_.position.y = buffer_lines_ - 1;
     }
 }
 
@@ -628,7 +650,7 @@ void Editor::normal_center_line(int line) {
     line = std::max(0, std::min(buffer_.get_size() - 1, line));
     first_line_ =
         std::max(0, static_cast<int>(line - std::floor((buffer_lines_) / 2)));
-    cursor_position_.y = line - first_line_;
+    buffer_.position.y = line - first_line_;
 }
 
 void Editor::normal_delete_line(int number_of_lines) {
@@ -638,14 +660,14 @@ void Editor::normal_delete_line(int number_of_lines) {
     if (buffer_.get_size() == 1) {
         zero_lines_ = true;
         buffer_.set_line("", 0);
-        cursor_position_.x = 0;
+        buffer_.position.x = 0;
     }
     for (int i = 0; i < number_of_lines; ++i) {
         if (buffer_.get_size() > 1 && current_line_ < buffer_.get_size()) {
             buffer_.remove_line(current_line_);
-            cursor_position_.x = buffer_.get_first_non_blank(current_line_);
-            cursor_position_.y =
-                std::min(buffer_.get_size() - 1, cursor_position_.y);
+            buffer_.position.x = buffer_.get_first_non_blank(current_line_);
+            buffer_.position.y =
+                std::min(buffer_.get_size() - 1, buffer_.position.y);
         }
     }
 }
@@ -659,7 +681,7 @@ void Editor::normal_page_down() {
     // Bottom line on screen becomes the first line
     first_line_ =
         std::min(first_line_ + buffer_lines_ - 1, buffer_.get_size() - 1);
-    if (first_line_ + cursor_position_.y >= buffer_.get_size()) {
+    if (first_line_ + buffer_.position.y >= buffer_.get_size()) {
         normal_end_of_file();
     }
 }
@@ -674,10 +696,10 @@ bool Editor::normal_command_g_state(int input) {
         case 'g':  // Bind: gg
             if (bind_count_.empty()) {
                 normal_first_line();
-                last_column_ = cursor_position_.x;
+                last_column_ = buffer_.position.x;
             } else {
                 normal_jump_line(bind_count_.get_value() - 1);
-                normal_first_non_blank_char(first_line_ + cursor_position_.y);
+                normal_first_non_blank_char(first_line_ + buffer_.position.y);
             }
             break;
     }
@@ -731,7 +753,7 @@ bool Editor::normal_add_count_state(int input) {
 int Editor::get_adjusted_x() {
     // When the y position is changed the x position needs to be updated to
     // adjust for line length
-    int line_length = buffer_.get_line_length(first_line_ + cursor_position_.y);
+    int line_length = buffer_.get_line_length(first_line_ + buffer_.position.y);
     return last_column_ >= line_length ? std::max(line_length - 1, 0)
                                        : last_column_;
 }
@@ -742,92 +764,92 @@ void Editor::adjusted_move(int y, int x) const {
 }
 
 void Editor::move_up() {
-    if (current_line_ - 1 >= 0 && cursor_position_.y - 1 >= 0) {
-        --cursor_position_.y;
+    if (current_line_ - 1 >= 0 && buffer_.position.y - 1 >= 0) {
+        --buffer_.position.y;
     } else if (current_line_ - 1 >= 0) {
         --first_line_;
     }
-    cursor_position_.x = get_adjusted_x();
+    buffer_.position.x = get_adjusted_x();
 }
 
 void Editor::move_right() {
     // In normal mode, the cursor should not be ahead of the end of the line
-    if (cursor_position_.x + line_number_width_ + 1 <= interface_.columns &&
-        cursor_position_.x < buffer_.get_line_length(current_line_) &&
+    // if (buffer_.position.x + line_number_width_ + 1 <= interface_.columns &&
+    if (buffer_.position.x < buffer_.get_line_length(current_line_) &&
         !(mode_.get_type() == ModeType::NORMAL &&
-          cursor_position_.x + 1 >= buffer_.get_line_length(current_line_))) {
-        ++cursor_position_.x;
-        last_column_ = cursor_position_.x;
+          buffer_.position.x + 1 >= buffer_.get_line_length(current_line_))) {
+        ++buffer_.position.x;
+        last_column_ = buffer_.position.x;
     }
 }
 
 void Editor::move_down() {
-    if (cursor_position_.y + 1 < buffer_lines_ &&
+    if (buffer_.position.y + 1 < buffer_lines_ &&
         current_line_ + 1 < buffer_.get_size()) {
-        ++cursor_position_.y;
+        ++buffer_.position.y;
     } else if (current_line_ + 1 < buffer_.get_size()) {
         // Scroll down
         ++first_line_;
     }
-    cursor_position_.x = get_adjusted_x();
+    buffer_.position.x = get_adjusted_x();
 }
 
 void Editor::move_left() {
-    if (cursor_position_.x - 1 >= 0) {
-        --cursor_position_.x;
-        last_column_ = cursor_position_.x;
+    if (buffer_.position.x - 1 >= 0) {
+        --buffer_.position.x;
+        last_column_ = buffer_.position.x;
     }
 }
 
 void Editor::insert_backspace() {
-    if (cursor_position_.x == 0 && current_line_ > 0) {
-        cursor_position_.x = buffer_.get_line_length(current_line_ - 1);
+    if (buffer_.position.x == 0 && current_line_ > 0) {
+        buffer_.position.x = buffer_.get_line_length(current_line_ - 1);
         buffer_.add_string_to_line(buffer_.lines[current_line_],
                                    current_line_ - 1);
         buffer_.remove_line(current_line_);
-        --cursor_position_.y;
-    } else if (!(cursor_position_.x == 0 && current_line_ == 0)) {
+        --buffer_.position.y;
+    } else if (!(buffer_.position.x == 0 && current_line_ == 0)) {
         // Erase character
-        buffer_.erase(--cursor_position_.x, 1, current_line_);
+        buffer_.erase(--buffer_.position.x, 1, current_line_);
     }
 }
 
 void Editor::insert_enter() {
-    if (cursor_position_.x < buffer_.get_line_length(current_line_)) {
+    if (buffer_.position.x < buffer_.get_line_length(current_line_)) {
         // Move substring down
         int substring_length =
-            buffer_.get_line_length(current_line_) - cursor_position_.x;
+            buffer_.get_line_length(current_line_) - buffer_.position.x;
         buffer_.insert_line(buffer_.lines[current_line_].substr(
-                                cursor_position_.x, substring_length),
+                                buffer_.position.x, substring_length),
                             current_line_ + 1);
-        buffer_.erase(cursor_position_.x, substring_length, current_line_);
+        buffer_.erase(buffer_.position.x, substring_length, current_line_);
     } else {
         buffer_.insert_line("", current_line_ + 1);
     }
-    cursor_position_.x = 0;
-    if (cursor_position_.y >= buffer_lines_ - 1) {
+    buffer_.position.x = 0;
+    if (buffer_.position.y >= buffer_lines_ - 1) {
         // If cursor is at the bottom of the screen, only increase first line
         ++first_line_;
     } else {
-        ++cursor_position_.y;
+        ++buffer_.position.y;
     }
 }
 
 void Editor::insert_tab() {
     if (options_.get_bool_option("tabs")) {
-        buffer_.insert_char(cursor_position_.x, 1, '\t', current_line_);
-        ++cursor_position_.x;
+        buffer_.insert_char(buffer_.position.x, 1, '\t', current_line_);
+        ++buffer_.position.x;
     } else {
         int tabsize = options_.get_int_option("tabsize");
-        buffer_.insert_char(cursor_position_.x, tabsize, ' ', current_line_);
-        cursor_position_.x += tabsize;
+        buffer_.insert_char(buffer_.position.x, tabsize, ' ', current_line_);
+        buffer_.position.x += tabsize;
     }
 }
 
 void Editor::insert_char(int input) {
-    buffer_.insert_char(cursor_position_.x, 1, static_cast<char>(input),
+    buffer_.insert_char(buffer_.position.x, 1, static_cast<char>(input),
                         current_line_);
-    ++cursor_position_.x;
+    ++buffer_.position.x;
 }
 
 void Editor::command_backspace() {
@@ -855,7 +877,7 @@ void Editor::visual_delete_selection() {
     Position start = get_visual_start_position();
     Position end = get_visual_end_position();
     // Y positions may not equal to the line it represents
-    if (cursor_position_ == start) {
+    if (buffer_.position == start) {
         start.y = current_line_;
         end.y = visual_line_;
     } else {
@@ -885,7 +907,7 @@ void Editor::visual_delete_selection() {
         }
     }
     // Set cursor position to start of selection with adjustment if needed
-    cursor_position_ = {
+    buffer_.position = {
         std::min(buffer_.get_size() - 1, start.y) - first_line_,
         std::max(0, std::min(buffer_.get_line_length(start.y) - 1, start.x))};
 }
@@ -912,7 +934,7 @@ void Editor::print_message(const std::string &message) {
     set_color(ColorForeground::DEFAULT, ColorBackground::DEFAULT);
     Interface::mv_print(buffer_lines_, 0, message);
     Interface::clear_to_eol();
-    adjusted_move(cursor_position_.y, cursor_position_.x);
+    Interface::move_cursor(cursor_position_.y, cursor_position_.x);
     unset_color();
 }
 
@@ -920,7 +942,7 @@ void Editor::print_error(const std::string &error) {
     set_color(ColorForeground::COLOR1, ColorBackground::DEFAULT);
     Interface::mv_print(buffer_lines_, 0, "ERROR: " + error);
     Interface::clear_to_eol();
-    adjusted_move(cursor_position_.y, cursor_position_.x);
+    Interface::move_cursor(cursor_position_.y, cursor_position_.x);
     unset_color();
 }
 
@@ -936,10 +958,10 @@ void Editor::exit_insert_mode() {
     clear_command_line();
     int new_x = Interface::get_current_x();
     if (new_x - 1 >= line_number_width_ + 1) {
-        --cursor_position_.x;
+        --buffer_.position.x;
     }
-    last_column_ = cursor_position_.x;
-    adjusted_move(cursor_position_.y, cursor_position_.x);
+    last_column_ = buffer_.position.x;
+    adjusted_move(buffer_.position.y, buffer_.position.x);
 }
 
 void Editor::exit_normal_mode() { bind_count_.reset(); }
@@ -974,12 +996,12 @@ void Editor::set_mode(ModeType new_type) {
                 break;
             case ModeType::VISUAL:
                 print_message("-- VISUAL --");
-                visual_position_ = cursor_position_;
+                visual_position_ = buffer_.position;
                 visual_line_ = current_line_;
                 break;
             case ModeType::VISUAL_LINE:
                 print_message("-- V-LINE --");
-                visual_position_ = cursor_position_;
+                visual_position_ = buffer_.position;
                 visual_line_ = current_line_;
                 break;
             default:

@@ -3,11 +3,15 @@
 #include <catch2/catch.hpp>
 #include <string>
 
+#include "position.hpp"
+
 TEST_CASE("Buffer initial construction", "[buffer]") {
     // Buffer should be empty upon construction
     Buffer buffer;
     int size = buffer.get_size();
-    REQUIRE(size == 0);
+    Position expected_position = {0, 0};
+    CHECK(size == 0);
+    CHECK(buffer.position == expected_position);
 }
 
 TEST_CASE("Buffer get line length of empty line", "[buffer]") {

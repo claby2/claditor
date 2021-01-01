@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-Buffer::Buffer() = default;
+Buffer::Buffer() : position(0, 0) {}
 
 int Buffer::get_line_length(int row) {
     return static_cast<int>(lines[row].length());
