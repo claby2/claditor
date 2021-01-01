@@ -196,7 +196,9 @@ void Editor::print_buffer() {
                          interface_.columns - line_number_width_ - 1);
             // Print characters one by one
             for (int j = 0; j < characters_to_render; ++j) {
-                bool accent = needs_visual_highlight(i, j) || line[j] == '\t';
+                bool accent =
+                    needs_visual_highlight(i, j + horizontal_offset_) ||
+                    line[j + horizontal_offset_] == '\t';
                 if (accent) {
                     unset_color();
                     set_color(ColorForeground::DEFAULT,
@@ -244,17 +246,15 @@ void Editor::clear_command_line() {
 void Editor::update() {
     cursor_position_ = {buffer_.position.y,
                         buffer_.position.x + line_number_width_ + 1};
-    int new_horizontal_offset = 0;
-    if (cursor_position_.x > interface_.columns - 1) {
-        new_horizontal_offset = cursor_position_.x - (interface_.columns - 1);
-    }
+    int initial_cursor_x = cursor_position_.x;
     cursor_position_.x = std::min(cursor_position_.x, interface_.columns - 1);
+    int raw_offset = std::max(0, initial_cursor_x - (interface_.columns - 1));
     if (cursor_position_.x == interface_.columns - 1 &&
-        new_horizontal_offset > horizontal_offset_) {
-        horizontal_offset_ = new_horizontal_offset;
+        raw_offset > horizontal_offset_) {
+        horizontal_offset_ = raw_offset;
     } else {
         horizontal_offset_ = std::min(horizontal_offset_, buffer_.position.x);
-        cursor_position_.x -= (horizontal_offset_ - new_horizontal_offset);
+        cursor_position_.x -= (horizontal_offset_ - raw_offset);
     }
     // Number of screen lines used for command-line
     const int COMMAND_HEIGHT = 1;
